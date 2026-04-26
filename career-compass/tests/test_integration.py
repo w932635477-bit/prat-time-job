@@ -1,0 +1,51 @@
+import pytest
+from httpx import AsyncClient, ASGITransport
+
+from career_compass.main import app, create_registry
+from career_compass.engine.state import StateManager
+from career_compass.engine.runner import SkillRunner
+
+
+@pytest.fixture
+async def client(tmp_path):
+    registry = create_registry()
+    state_mgr = StateManager(tmp_path / "test.db")
+    await state_mgr.initialize()
+    app.state.runner = SkillRunner(registry, state_mgr, None)
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as c:
+        yield c
+
+
+@pytest.mark.asyncio
+async def test_full_chat_flow(client):
+    # Start conversation
+    resp = await client.post("/api/chat", json={
+        "user_id": "int-test",
+        "message": "开始",
+        "selected_option": None,
+    })
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["message"]["step_id"] == "industry"
+
+    # Answer industry
+    resp = await client.post("/api/chat", json={
+        "user_id": "int-test",
+        "message": "建材行业12年",
+        "selected_option": None,
+    })
+    data = resp.json()
+    assert data["message"]["step_id"] == "proud_moment"
+
+    # Go back
+    resp = await client.post("/api/back/int-test/industry")
+    data = resp.json()
+    assert data["message"]["step_id"] == "industry"
+
+
+@pytest.mark.asyncio
+async def test_get_state(client):
+    resp = await client.get("/api/state/int-test")
+    assert resp.status_code == 200
