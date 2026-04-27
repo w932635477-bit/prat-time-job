@@ -12,7 +12,9 @@ from fastapi.staticfiles import StaticFiles
 
 from starting_point.auth.routes import router as auth_router
 from starting_point.config import settings
+from starting_point.db.order_repo import OrderRepo
 from starting_point.db.user_repo import UserRepo
+from starting_point.payments.routes import router as payment_router
 from starting_point.engine.registry import SkillRegistry
 from starting_point.engine.runner import SkillRunner
 from starting_point.engine.state import StateManager
@@ -48,6 +50,7 @@ async def lifespan(app: FastAPI):
     app.state.runner = SkillRunner(registry, state_manager, llm_client)
     db_conn = await aiosqlite.connect(settings.database_path)
     app.state.user_repo = UserRepo(db_conn)
+    app.state.order_repo = OrderRepo(db_conn)
     yield
     await db_conn.close()
 
@@ -66,6 +69,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(payment_router)
 
 
 @app.post("/api/chat", response_model=ChatResponse)
