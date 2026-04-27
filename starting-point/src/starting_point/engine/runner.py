@@ -172,24 +172,44 @@ class SkillRunner:
         if state is None:
             raise ValueError(f"User {user_id} not found")
 
-        skill = self.registry.get(state.current_skill)
-        target_index = None
-        for i, s in enumerate(skill.steps):
-            if s.id == target_step:
-                target_index = i
-                break
+        # Search current skill first, then all completed skills
+        skill, target_index = self._find_step_in_skill(
+            state.current_skill, target_step,
+        )
+        if skill is None:
+            for skill_type in V2_SKILL_ORDER:
+                if skill_type == state.current_skill:
+                    continue
+                skill, target_index = self._find_step_in_skill(
+                    skill_type, target_step,
+                )
+                if skill is not None:
+                    # Rewind to earlier skill
+                    state.current_skill = skill_type
+                    state.step_results = []
+                    state.completed_steps = []
+                    break
 
-        if target_index is None:
+        if skill is None:
             raise ValueError(f"Step {target_step} not found")
 
-        state.step_results = state.step_results[:target_index]
         state.current_step_index = target_index
         state.completed_steps = [s.id for s in skill.steps[:target_index]]
+        state.step_results = state.step_results[:target_index]
         await self.state_manager.save_state(state)
 
         step = skill.get_step(target_index)
         progress = target_index / skill.total_steps
         return self._build_step_response(step, target_index, skill.total_steps)
+
+    def _find_step_in_skill(
+        self, skill_type: SkillType, target_step: str,
+    ) -> tuple[object | None, int | None]:
+        skill = self.registry.get(skill_type)
+        for i, s in enumerate(skill.steps):
+            if s.id == target_step:
+                return skill, i
+        return None, None
 
     def _build_step_response(
         self,

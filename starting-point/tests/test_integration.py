@@ -28,21 +28,21 @@ async def test_full_chat_flow(client):
     })
     assert resp.status_code == 200
     data = resp.json()
-    assert data["message"]["step_id"] == "industry"
+    assert data["message"]["step_id"] == "digital_literacy"
 
-    # Answer industry
+    # Answer first assessment question
     resp = await client.post("/api/chat", json={
         "user_id": "int-test",
-        "message": "建材行业12年",
+        "message": "还行",
         "selected_option": None,
     })
     data = resp.json()
-    assert data["message"]["step_id"] == "proud_moment"
+    assert data["message"]["step_id"] == "mental_readiness"
 
     # Go back
-    resp = await client.post("/api/back/int-test/industry")
+    resp = await client.post("/api/back/int-test/digital_literacy")
     data = resp.json()
-    assert data["message"]["step_id"] == "industry"
+    assert data["message"]["step_id"] == "digital_literacy"
 
 
 @pytest.mark.asyncio

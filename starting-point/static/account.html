@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>启点 — 我的账户</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    .account-page {
+      padding-top: calc(var(--header-height) + var(--sp-6));
+      padding-bottom: calc(var(--safe-bottom) + var(--sp-6));
+      padding-left: var(--page-padding);
+      padding-right: var(--page-padding);
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    .account-section {
+      margin-bottom: var(--sp-6);
+    }
+
+    .account-section__title {
+      font: var(--t-title);
+      color: var(--gold);
+      margin-bottom: var(--sp-4);
+    }
+
+    .account-info {
+      background: var(--bg-secondary);
+      border-radius: var(--r-lg);
+      padding: var(--sp-5);
+    }
+
+    .account-info__row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--sp-3) 0;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .account-info__row:last-child {
+      border-bottom: none;
+    }
+
+    .account-info__label {
+      font: var(--t-body-sm);
+      color: var(--text-secondary);
+    }
+
+    .account-info__value {
+      font: var(--t-body-sm);
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .account-info__avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+    }
+
+    .tier-badge {
+      display: inline-block;
+      background: var(--gold-subtle);
+      color: var(--gold);
+      font: var(--t-caption);
+      font-weight: 500;
+      padding: var(--sp-1) var(--sp-4);
+      border-radius: var(--r-pill);
+    }
+
+    .order-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-3);
+    }
+
+    .order-item {
+      background: var(--bg-secondary);
+      border-radius: var(--r-md);
+      padding: var(--sp-4);
+    }
+
+    .order-item__header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: var(--sp-2);
+    }
+
+    .order-item__tier {
+      font: var(--t-body-sm);
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .order-item__status {
+      font: var(--t-caption);
+      padding: 2px var(--sp-3);
+      border-radius: var(--r-pill);
+    }
+
+    .order-item__status--paid {
+      background: rgba(76, 175, 80, 0.15);
+      color: var(--success);
+    }
+
+    .order-item__status--pending {
+      background: var(--gold-subtle);
+      color: var(--gold);
+    }
+
+    .order-item__detail {
+      font: var(--t-caption);
+      color: var(--text-tertiary);
+    }
+
+    .account-actions {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-3);
+    }
+
+    .btn-danger {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 50px;
+      background: transparent;
+      color: var(--error);
+      font: var(--t-button);
+      border: 1px solid var(--error);
+      border-radius: 14px;
+      cursor: pointer;
+    }
+
+    .btn-danger:active {
+      background: rgba(255, 69, 58, 0.1);
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--text-tertiary);
+      padding: var(--sp-8);
+      font: var(--t-body-sm);
+    }
+
+    .loading-state {
+      text-align: center;
+      color: var(--text-secondary);
+      padding: var(--sp-8);
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <button class="app-header__back" onclick="location.href='app.html'" aria-label="返回">←</button>
+    <span class="app-header__title">我的账户</span>
+  </header>
+
+  <div class="account-page">
+    <div id="account-loading" class="loading-state">加载中...</div>
+    <div id="account-content" style="display:none">
+      <section class="account-section">
+        <h2 class="account-section__title">个人信息</h2>
+        <div class="account-info">
+          <div class="account-info__row">
+            <span class="account-info__label">头像</span>
+            <img id="acct-avatar" class="account-info__avatar" src="" alt="">
+          </div>
+          <div class="account-info__row">
+            <span class="account-info__label">昵称</span>
+            <span class="account-info__value" id="acct-nickname">-</span>
+          </div>
+          <div class="account-info__row">
+            <span class="account-info__label">当前方案</span>
+            <span class="account-info__value" id="acct-tier">-</span>
+          </div>
+          <div class="account-info__row" id="acct-expires-row" style="display:none">
+            <span class="account-info__label">到期时间</span>
+            <span class="account-info__value" id="acct-expires">-</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="account-section">
+        <h2 class="account-section__title">订单记录</h2>
+        <div id="order-list" class="order-list">
+          <div class="empty-state">暂无订单</div>
+        </div>
+      </section>
+
+      <section class="account-section">
+        <h2 class="account-section__title">数据管理</h2>
+        <div class="account-actions">
+          <button class="btn-primary" onclick="exportData()">导出我的数据</button>
+          <button class="btn-danger" onclick="deleteAccount()">删除账户</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script type="module">
+    import { getToken, fetchWithAuth, clearToken } from './js/auth.js';
+
+    const TIER_LABELS = {
+      free: '免费版',
+      low_ticket: '基础版 ¥19.9',
+      standard: '标准版 ¥59',
+      human: '人工辅导版 ¥199',
+    };
+
+    async function loadAccount() {
+      if (!getToken()) {
+        window.location.href = '/login.html';
+        return;
+      }
+
+      try {
+        const userResp = await fetchWithAuth('/api/auth/me');
+        if (!userResp) return;
+        const user = await userResp.json();
+        renderProfile(user);
+
+        const ordersResp = await fetchWithAuth(`/api/payments/orders?user_id=${user.id}`);
+        if (ordersResp && ordersResp.ok) {
+          const orders = await ordersResp.json();
+          renderOrders(orders);
+        }
+      } catch (err) {
+        console.error('Load account error:', err);
+      }
+
+      document.getElementById('account-loading').style.display = 'none';
+      document.getElementById('account-content').style.display = 'block';
+    }
+
+    function renderProfile(user) {
+      const avatar = document.getElementById('acct-avatar');
+      if (user.avatar_url) {
+        avatar.src = user.avatar_url;
+      } else {
+        avatar.style.display = 'none';
+      }
+      document.getElementById('acct-nickname').textContent = user.nickname || '未设置';
+      document.getElementById('acct-tier').innerHTML =
+        `<span class="tier-badge">${TIER_LABELS[user.tier] || user.tier}</span>`;
+
+      if (user.tier_expires_at) {
+        document.getElementById('acct-expires-row').style.display = 'flex';
+        const d = new Date(user.tier_expires_at);
+        document.getElementById('acct-expires').textContent =
+          `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      }
+    }
+
+    function renderOrders(orders) {
+      const list = document.getElementById('order-list');
+      if (!orders || orders.length === 0) {
+        list.innerHTML = '<div class="empty-state">暂无订单</div>';
+        return;
+      }
+      list.innerHTML = orders.map(o => `
+        <div class="order-item">
+          <div class="order-item__header">
+            <span class="order-item__tier">${TIER_LABELS[o.tier] || o.tier}</span>
+            <span class="order-item__status order-item__status--${o.status}">${
+              o.status === 'paid' ? '已支付' : o.status === 'pending' ? '待支付' : o.status
+            }</span>
+          </div>
+          <div class="order-item__detail">¥${(o.amount / 100).toFixed(1)} · ${o.created_at || ''}</div>
+        </div>
+      `).join('');
+    }
+
+    window.exportData = async function() {
+      const resp = await fetchWithAuth('/api/user/export');
+      if (!resp) return;
+      const data = await resp.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'starting-point-export.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    window.deleteAccount = async function() {
+      if (!confirm('确定要删除账户吗？所有数据将无法恢复。')) return;
+      if (!confirm('再次确认：删除后无法恢复。继续？')) return;
+      const resp = await fetchWithAuth('/api/user/account', { method: 'DELETE' });
+      if (!resp) return;
+      clearToken();
+      window.location.href = '/login.html';
+    };
+
+    document.addEventListener('DOMContentLoaded', loadAccount);
+  </script>
+</body>
+</html>

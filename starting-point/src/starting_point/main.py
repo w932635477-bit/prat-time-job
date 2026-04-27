@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from fastapi.staticfiles import StaticFiles
 
 from starting_point.auth.routes import router as auth_router
+from starting_point.user.routes import router as user_router
 from starting_point.config import settings
 from starting_point.db.order_repo import OrderRepo
 from starting_point.db.user_repo import UserRepo
@@ -70,6 +71,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(payment_router)
+app.include_router(user_router)
 
 
 @app.post("/api/chat", response_model=ChatResponse)

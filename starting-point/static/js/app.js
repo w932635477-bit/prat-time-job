@@ -2,6 +2,7 @@
 // Main controller: init, API calls, shared DOM rendering, event binding
 
 import * as store from './store.js';
+import { getToken, fetchWithAuth, getCurrentUser } from './auth.js';
 import { getPhase, getPhaseName, getTotalPhases, getRenderer } from './phases/index.js';
 
 const API_BASE = '/api';
@@ -92,23 +93,24 @@ function updateProgress(phase, step) {
 // --- API calls ---
 
 async function apiChat(message, selectedOption) {
-  const resp = await fetch(`${API_BASE}/chat`, {
+  const resp = await fetchWithAuth(`${API_BASE}/chat`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       user_id: state.userId,
       message: message || selectedOption || '',
       selected_option: selectedOption || null,
     }),
   });
+  if (!resp) throw new Error('Auth required');
   if (!resp.ok) throw new Error(`API error: ${resp.status}`);
   return resp.json();
 }
 
 async function apiGoBack(stepId) {
-  const resp = await fetch(`${API_BASE}/back/${state.userId}/${stepId}`, {
+  const resp = await fetchWithAuth(`${API_BASE}/back/${state.userId}/${stepId}`, {
     method: 'POST',
   });
+  if (!resp) throw new Error('Auth required');
   if (!resp.ok) throw new Error(`API error: ${resp.status}`);
   return resp.json();
 }
@@ -166,6 +168,11 @@ async function handleOptionSelect(opt) {
 }
 
 function handleResponse(response) {
+  if (response.paywall) {
+    renderPaywall(response.preview_data || {}, response.tiers || []);
+    return;
+  }
+
   const messages = getMessagesContainer();
 
   if (response.message) {
@@ -276,10 +283,93 @@ function setupProgressGrid() {
   });
 }
 
+// --- Paywall rendering ---
+
+function renderPaywall(previewData, tiers) {
+  const area = getMessagesContainer();
+
+  if (previewData && Object.keys(previewData).length > 0) {
+    const preview = document.createElement('div');
+    preview.className = 'chat-row chat-row--ai fade-in';
+    preview.innerHTML = `<div class="output-card"><div class="output-card__title">预览方案</div><div class="output-card__field">${formatPreview(previewData)}</div></div>`;
+    area.appendChild(preview);
+  }
+
+  const wall = document.createElement('div');
+  wall.className = 'chat-row chat-row--ai fade-in';
+  wall.innerHTML = `
+    <div class="paywall">
+      <div class="paywall__title">解锁完整方案</div>
+      <div class="paywall__subtitle">选择适合你的方案，继续你的旅程</div>
+      <div class="pricing-grid">
+        ${tiers.map(t => `
+          <div class="pricing-card ${t.key === 'standard' ? 'pricing-card--popular' : ''}" data-tier="${t.key}">
+            <div class="pricing-card__name">${t.label}</div>
+            <div class="pricing-card__price">&yen;${(t.price_fen / 100).toFixed(1)} <span>/${t.duration_days}天</span></div>
+            <div class="pricing-card__desc">${t.description}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  area.appendChild(wall);
+
+  wall.querySelectorAll('.pricing-card').forEach(card => {
+    card.addEventListener('click', () => handlePurchase(card.dataset.tier));
+  });
+  scrollToBottom();
+}
+
+async function handlePurchase(tier) {
+  const resp = await fetchWithAuth(`${API_BASE}/payments/create?tier=${tier}`, { method: 'POST' });
+  if (!resp) return;
+  const data = await resp.json();
+  alert(`订单创建成功: ${data.order_id}\n\n开发模式下请在后台确认支付。`);
+  pollPayment(data.order_id);
+}
+
+async function pollPayment(orderId) {
+  for (let i = 0; i < 60; i++) {
+    await new Promise(r => setTimeout(r, 3000));
+    const resp = await fetchWithAuth(`${API_BASE}/payments/status/${orderId}`);
+    if (!resp) return;
+    const data = await resp.json();
+    if (data.status === 'paid') {
+      location.reload();
+      return;
+    }
+  }
+}
+
+function formatPreview(data) {
+  return Object.entries(data).map(([k, v]) =>
+    `<div><strong>${escapeHtml(k)}</strong>: ${typeof v === 'object' ? escapeHtml(JSON.stringify(v)) : escapeHtml(String(v))}</div>`
+  ).join('');
+}
+
 // --- Init ---
 
 async function initApp() {
+  // Auth guard
+  if (!getToken()) {
+    window.location.href = '/login.html';
+    return;
+  }
+
   state = store.init();
+
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return;
+  state = { ...state, userId: currentUser.id };
+  store.save(state);
+
+  // Set avatar
+  const avatar = document.getElementById('user-avatar');
+  if (avatar && currentUser.avatar_url) {
+    avatar.src = currentUser.avatar_url;
+    avatar.style.display = 'block';
+    avatar.onclick = () => { window.location.href = '/account.html'; };
+  }
 
   const messages = getMessagesContainer();
   const input = $('#chatInput');

@@ -36,3 +36,9 @@ class UserRepo:
         cols = [d[0] for d in cursor.description]
         data = dict(zip(cols, row))
         return User(**data)
+
+    async def delete_user(self, user_id: str) -> None:
+        await self._db.execute("DELETE FROM user_profiles WHERE user_id = ?", (user_id,))
+        await self._db.execute("DELETE FROM orders WHERE user_id = ?", (user_id,))
+        await self._db.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        await self._db.commit()

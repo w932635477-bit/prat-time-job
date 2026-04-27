@@ -16,7 +16,7 @@ async def test_create_and_load_state(state_manager):
     loaded = await state_manager.load_state("user1")
     assert loaded is not None
     assert loaded.user_id == "user1"
-    assert loaded.current_skill == SkillType.SELF_DISCOVERY
+    assert loaded.current_skill == SkillType.ASSESSMENT
 
 
 @pytest.mark.asyncio

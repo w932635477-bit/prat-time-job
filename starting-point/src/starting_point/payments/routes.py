@@ -98,6 +98,13 @@ async def payment_status(order_id: str, request: Request):
     return {"status": order.status, "tier": order.tier}
 
 
+@router.get("/orders")
+async def list_user_orders(user_id: str, request: Request):
+    order_repo: OrderRepo = request.app.state.order_repo
+    orders = await order_repo.get_orders_by_user(user_id)
+    return [o.model_dump() for o in orders]
+
+
 def _extract_bearer(request: Request) -> str | None:
     auth = request.headers.get("authorization", "")
     if auth.startswith("Bearer "):

@@ -38,7 +38,7 @@ def test_skill_step_result_stores_answer():
 
 def test_user_state_tracks_current_skill():
     state = UserState(user_id="test-user")
-    assert state.current_skill == SkillType.SELF_DISCOVERY
+    assert state.current_skill == SkillType.ASSESSMENT
     assert state.completed_steps == []
 
 
