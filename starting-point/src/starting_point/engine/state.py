@@ -4,6 +4,7 @@ from pathlib import Path
 
 import aiosqlite
 
+from starting_point.db.migrations import run_migrations
 from starting_point.models import UserState
 
 
@@ -13,13 +14,7 @@ class StateManager:
 
     async def initialize(self) -> None:
         async with aiosqlite.connect(self._db_path) as db:
-            await db.execute("""
-                CREATE TABLE IF NOT EXISTS user_states (
-                    user_id TEXT PRIMARY KEY,
-                    data TEXT NOT NULL
-                )
-            """)
-            await db.commit()
+            await run_migrations(db)
 
     async def save_state(self, state: UserState) -> None:
         data = state.model_dump_json()
