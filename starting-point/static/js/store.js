@@ -3,13 +3,9 @@
 
 const STORAGE_KEY = 'starting_point_state';
 
-function generateId() {
-  return 'u_' + crypto.randomUUID();
-}
-
 function createInitialState() {
   return {
-    userId: generateId(),
+    userId: null,
     currentPhase: 0,
     currentStep: 0,
     phaseResults: {},
