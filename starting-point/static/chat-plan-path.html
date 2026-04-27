@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>规划路径 — 启点</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    .chat-area {
+      padding-top: calc(var(--header-height) + 2px + var(--sp-4));
+      padding-bottom: calc(var(--input-height) + var(--sp-3) + var(--safe-bottom) + var(--sp-3));
+      padding-left: var(--page-padding);
+      padding-right: var(--page-padding);
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    .chat-area__messages {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-row {
+      margin-bottom: var(--sp-3);
+    }
+
+    .chat-row--ai { display: flex; justify-content: flex-start; }
+    .chat-row--user { display: flex; justify-content: flex-end; }
+    .chat-row--confidence { display: flex; justify-content: flex-start; }
+    .chat-row--options { display: flex; flex-wrap: wrap; gap: var(--sp-3); padding-top: var(--sp-1); }
+
+    /* Offer Card */
+    .offer-card {
+      background: var(--bg-secondary);
+      border-radius: var(--r-lg);
+      padding: var(--sp-5);
+      margin: var(--sp-4) 0;
+    }
+
+    .offer-card__badge {
+      display: inline-block;
+      background: var(--gold-subtle);
+      color: var(--gold);
+      font: var(--t-micro);
+      padding: var(--sp-1) var(--sp-3);
+      border-radius: var(--r-pill);
+      margin-bottom: var(--sp-3);
+    }
+
+    .offer-card__name {
+      font: var(--t-title);
+      font-size: 18px;
+      color: var(--text-primary);
+      margin-bottom: var(--sp-2);
+    }
+
+    .offer-card__detail {
+      font: var(--t-body-sm);
+      color: var(--text-secondary);
+      margin-bottom: var(--sp-2);
+      line-height: 1.6;
+    }
+
+    .offer-card__detail strong {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .offer-card__step {
+      background: var(--bg-primary);
+      border-radius: var(--r-md);
+      padding: var(--sp-3) var(--sp-4);
+      margin-top: var(--sp-4);
+      font: var(--t-body-sm);
+      color: var(--gold);
+    }
+
+    .offer-card__step-label {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      display: block;
+      margin-bottom: var(--sp-1);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <button class="app-header__back" onclick="location.href='result-self-discovery.html'">←</button>
+    <span class="app-header__title">规划路径</span>
+    <span class="app-header__step">6/6</span>
+  </header>
+
+  <div class="progress-bar" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="探索进度">
+    <div class="progress-bar__fill" style="width: 100%"></div>
+  </div>
+
+  <div class="chat-area">
+    <div class="chat-area__messages" role="log" aria-live="polite" aria-label="对话内容">
+
+      <!-- Previous Q&A summarized -->
+      <div class="chat-row chat-row--ai">
+        <div class="bubble-ai">基于你的能力和偏好，这里有三条变现路径。选一条最心动的。</div>
+      </div>
+
+      <!-- Offer 1: Recommended -->
+      <div class="chat-row chat-row--ai">
+        <div class="offer-card">
+          <div class="offer-card__badge">推荐</div>
+          <div class="offer-card__name">装修建材线上咨询</div>
+          <div class="offer-card__detail"><strong>卖给谁：</strong>正在装修的业主，尤其是第一次装修不懂材料的</div>
+          <div class="offer-card__detail"><strong>怎么定价：</strong>首次免费（积累口碑），后续 99 元/次</div>
+          <div class="offer-card__detail"><strong>为什么适合你：</strong>20年建材经验，对价格了如指掌，别人无法替代</div>
+          <div class="offer-card__step">
+            <span class="offer-card__step-label">7天内第一步</span>
+            在闲鱼发一篇"10年建材人教你避坑"的帖子，看有没有人问
+          </div>
+        </div>
+      </div>
+
+      <!-- Offer 2 -->
+      <div class="chat-row chat-row--ai">
+        <div class="offer-card">
+          <div class="offer-card__name">建材避坑短视频</div>
+          <div class="offer-card__detail"><strong>卖给谁：</strong>抖音/小红书上准备装修的年轻业主</div>
+          <div class="offer-card__detail"><strong>怎么定价：</strong>免费引流 + 付费深度咨询 199 元/次</div>
+          <div class="offer-card__detail"><strong>为什么适合你：</strong>你的知识天然适合"揭秘"类内容</div>
+          <div class="offer-card__step">
+            <span class="offer-card__step-label">7天内第一步</span>
+            用手机录一条"瓷砖80块和25块有什么区别"的30秒视频
+          </div>
+        </div>
+      </div>
+
+      <!-- Offer 3 -->
+      <div class="chat-row chat-row--ai">
+        <div class="offer-card">
+          <div class="offer-card__name">小区建材团购</div>
+          <div class="offer-card__detail"><strong>卖给谁：</strong>同小区正在装修的邻居</div>
+          <div class="offer-card__detail"><strong>怎么定价：</strong>免费组织团购，从工厂拿返佣</div>
+          <div class="offer-card__detail"><strong>为什么适合你：</strong>你有工厂渠道和价格判断力</div>
+          <div class="offer-card__step">
+            <span class="offer-card__step-label">7天内第一步</span>
+            在小区业主群里发"装修建材帮大家省钱"的消息
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-row chat-row--confidence">
+        <div class="confidence-boost">
+          三条路都不需要投入钱。选一条最想试的，我们马上帮你准备发布内容。
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Input Bar -->
+  <div class="input-bar">
+    <div class="input-bar__inner">
+      <input class="input-bar__field" type="text" placeholder="选哪条？或者说说你的想法..." aria-label="输入消息">
+      <button class="input-bar__send">↑</button>
+    </div>
+  </div>
+</body>
+</html>

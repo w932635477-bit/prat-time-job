@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>能力清单 — 启点</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    .result-page {
+      padding-top: calc(var(--header-height) + 2px + var(--sp-6));
+      padding-bottom: calc(80px + var(--safe-bottom));
+      padding-left: var(--page-padding);
+      padding-right: var(--page-padding);
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    .result-page__intro {
+      text-align: center;
+      margin-bottom: var(--sp-8);
+    }
+
+    .result-page__label {
+      font: var(--t-caption);
+      color: var(--gold);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: var(--sp-2);
+    }
+
+    .result-page__heading {
+      font: var(--t-hero);
+      color: var(--text-primary);
+      margin-bottom: var(--sp-4);
+    }
+
+    .result-page__desc {
+      font: var(--t-body-sm);
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Suggestion box */
+    .suggestion {
+      background: var(--gold-subtle);
+      border-left: 3px solid var(--gold);
+      padding: var(--sp-4) var(--sp-5);
+      border-radius: 0 var(--r-md) var(--r-md) 0;
+      margin-top: var(--sp-6);
+    }
+
+    .suggestion__title {
+      font: var(--t-body-sm);
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: var(--sp-2);
+    }
+
+    .suggestion__text {
+      font: var(--t-body-sm);
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Bottom CTA */
+    .bottom-cta {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-primary);
+      border-top: 1px solid var(--divider);
+      padding: var(--sp-4) var(--page-padding) calc(var(--sp-4) + var(--safe-bottom));
+      z-index: 100;
+    }
+
+    .bottom-cta__inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    .bottom-cta__label {
+      font: var(--t-caption);
+      color: var(--text-tertiary);
+      text-align: center;
+      margin-bottom: var(--sp-3);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <button class="app-header__back" onclick="history.back()">←</button>
+    <span class="app-header__title">认识自己</span>
+    <span class="app-header__step">8/8</span>
+  </header>
+
+  <div class="progress-bar" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="探索进度">
+    <div class="progress-bar__fill" style="width: 100%"></div>
+  </div>
+
+  <div class="result-page">
+    <div class="result-page__intro">
+      <div class="result-page__label">探索完成</div>
+      <h1 class="result-page__heading">你的能力清单</h1>
+      <p class="result-page__desc">
+        基于你分享的经历，我们提取了以下可变现的能力。这些不是空话，是你真金白银的经验。
+      </p>
+    </div>
+
+    <!-- Result Card -->
+    <div class="result-card">
+      <div class="result-item">
+        <div class="result-item__name">装修报价单审核与砍价</div>
+        <div class="result-item__evidence">"帮人看报价单，告诉他哪里被坑了"</div>
+        <div class="result-item__tags">
+          <span class="result-item__tag">成本管控</span>
+          <span class="result-item__tag">行业洞察</span>
+          <span class="result-item__tag">商务谈判</span>
+        </div>
+        <span class="result-item__value">500 - 2,000 元/单</span>
+      </div>
+
+      <div class="result-item">
+        <div class="result-item__name">瓷砖选型与采购指导</div>
+        <div class="result-item__evidence">"帮朋友去佛山工厂直购，便宜40%"</div>
+        <div class="result-item__tags">
+          <span class="result-item__tag">供应链知识</span>
+          <span class="result-item__tag">品质鉴别</span>
+        </div>
+        <span class="result-item__value">300 - 1,000 元/次</span>
+      </div>
+
+      <div class="result-item">
+        <div class="result-item__name">全屋建材预算规划</div>
+        <div class="result-item__evidence">"一套80平的房子，我能告诉你哪些该花哪些能省"</div>
+        <div class="result-item__tags">
+          <span class="result-item__tag">预算优化</span>
+          <span class="result-item__tag">材料搭配</span>
+        </div>
+        <span class="result-item__value">800 - 3,000 元/单</span>
+      </div>
+    </div>
+
+    <!-- Suggestion -->
+    <div class="suggestion">
+      <div class="suggestion__title">启点建议</div>
+      <p class="suggestion__text">
+        你的经验在"重决策"的家居消费领域有很高的变现潜力。建议将这些零散服务打包成"家装避坑指南"，更容易让客户买单。
+      </p>
+    </div>
+  </div>
+
+  <!-- Bottom CTA -->
+  <div class="bottom-cta">
+    <div class="bottom-cta__inner">
+      <div class="bottom-cta__label">下一步</div>
+      <button class="btn-primary" onclick="location.href='chat-plan-path.html'" aria-label="继续规划路径">继续规划路径 →</button>
+    </div>
+  </div>
+</body>
+</html>

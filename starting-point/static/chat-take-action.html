@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>开张行动 — 启点</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    .action-page {
+      padding-top: calc(var(--header-height) + 2px + var(--sp-6));
+      padding-bottom: calc(80px + var(--safe-bottom));
+      padding-left: var(--page-padding);
+      padding-right: var(--page-padding);
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    .action-page__intro {
+      margin-bottom: var(--sp-8);
+    }
+
+    .action-page__label {
+      font: var(--t-caption);
+      color: var(--gold);
+      letter-spacing: 0.15em;
+      margin-bottom: var(--sp-2);
+    }
+
+    .action-page__heading {
+      font: var(--t-hero);
+      color: var(--text-primary);
+      margin-bottom: var(--sp-4);
+    }
+
+    .action-page__desc {
+      font: var(--t-body-sm);
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Post Preview Card */
+    .post-card {
+      background: var(--bg-secondary);
+      border-radius: var(--r-lg);
+      padding: var(--sp-6);
+      margin-bottom: var(--sp-6);
+    }
+
+    .post-card__platform {
+      display: inline-block;
+      background: var(--gold-subtle);
+      color: var(--gold);
+      font: var(--t-micro);
+      padding: var(--sp-1) var(--sp-3);
+      border-radius: var(--r-pill);
+      margin-bottom: var(--sp-4);
+    }
+
+    .post-card__title {
+      font: var(--t-title);
+      color: var(--text-primary);
+      margin-bottom: var(--sp-4);
+    }
+
+    .post-card__body {
+      font: var(--t-body-sm);
+      color: var(--text-secondary);
+      line-height: 1.8;
+      white-space: pre-line;
+    }
+
+    .post-card__tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sp-2);
+      margin-top: var(--sp-5);
+      padding-top: var(--sp-5);
+      border-top: 1px solid var(--divider);
+    }
+
+    .post-card__tag {
+      background: var(--bg-primary);
+      color: var(--text-secondary);
+      font: var(--t-micro);
+      padding: var(--sp-1) var(--sp-3);
+      border-radius: var(--r-sm);
+    }
+
+    /* Tips */
+    .tips {
+      background: var(--bg-secondary);
+      border-radius: var(--r-lg);
+      padding: var(--sp-5);
+    }
+
+    .tips__title {
+      font: var(--t-body-sm);
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: var(--sp-3);
+    }
+
+    .tips__list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-2);
+    }
+
+    .tips__item {
+      font: var(--t-body-sm);
+      color: var(--text-secondary);
+      padding-left: var(--sp-5);
+      position: relative;
+    }
+
+    .tips__item::before {
+      content: "•";
+      color: var(--gold);
+      position: absolute;
+      left: var(--sp-2);
+    }
+
+    /* Bottom CTA */
+    .bottom-cta {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-primary);
+      border-top: 1px solid var(--divider);
+      padding: var(--sp-4) var(--page-padding) calc(var(--sp-4) + var(--safe-bottom));
+      z-index: 100;
+    }
+
+    .bottom-cta__inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      display: flex;
+      gap: var(--sp-3);
+    }
+
+    .bottom-cta .btn-primary {
+      flex: 2;
+    }
+
+    .bottom-cta .btn-secondary {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <button class="app-header__back" onclick="history.back()">←</button>
+    <span class="app-header__title">开张行动</span>
+    <span class="app-header__step">完成</span>
+  </header>
+
+  <div class="progress-bar" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="探索进度">
+    <div class="progress-bar__fill" style="width: 100%"></div>
+  </div>
+
+  <div class="action-page">
+    <div class="action-page__intro">
+      <div class="action-page__label">发布内容已就绪</div>
+      <h1 class="action-page__heading">你的第一篇帖子</h1>
+      <p class="action-page__desc">下面是为你生成的闲鱼帖子。可以直接复制发布，也可以修改成你自己的话。</p>
+    </div>
+
+    <!-- Post Preview -->
+    <div class="post-card">
+      <div class="post-card__platform">闲鱼</div>
+      <h2 class="post-card__title">装修建材帮你省钱</h2>
+      <div class="post-card__body">10年建材老兵帮你审清单、找平替、避大坑。
+
+真实案例：
+• 80x80瓷砖：市场价80/平 → 工厂价25-35/平，省4-5千
+• 品牌马桶：标价3000+ → 同品质800-1200，省2千+
+• 全屋建材清单审查：帮你省 5000-20000 元
+
+我能帮你做什么：
+1. 材料清单审查 — 逐项检查你准备买的建材，告诉你贵不贵
+2. 平替产品推荐 — 同质量更便宜的替代品
+3. 全屋预算规划 — 哪些该花、哪些能省
+
+首次咨询免费。私信发你的建材清单，帮你逐条看。</div>
+      <div class="post-card__tags">
+        <span class="post-card__tag">装修避坑</span>
+        <span class="post-card__tag">建材咨询</span>
+        <span class="post-card__tag">瓷砖平替</span>
+        <span class="post-card__tag">省钱攻略</span>
+        <span class="post-card__tag">建材老兵</span>
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="tips">
+      <div class="tips__title">发布建议</div>
+      <ul class="tips__list">
+        <li class="tips__item">配上真实的瓷砖对比照片，越接地气越好</li>
+        <li class="tips__item">标题里带上价格数字，吸引点击</li>
+        <li class="tips__item">前3天每天刷新一次帖子，保持曝光</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Bottom CTA -->
+  <div class="bottom-cta">
+    <div class="bottom-cta__inner">
+      <button class="btn-primary" onclick="copyPost()" aria-label="复制发布文案">复制文案</button>
+      <button class="btn-secondary" onclick="location.href='index.html'" aria-label="返回首页">回首页</button>
+    </div>
+  </div>
+
+  <script>
+    function copyPost() {
+      const text = `装修建材帮你省钱
+
+10年建材老兵帮你审清单、找平替、避大坑。
+
+真实案例：
+• 80x80瓷砖：市场价80/平 → 工厂价25-35/平，省4-5千
+• 品牌马桶：标价3000+ → 同品质800-1200，省2千+
+• 全屋建材清单审查：帮你省 5000-20000 元
+
+我能帮你做什么：
+1. 材料清单审查 — 逐项检查你准备买的建材，告诉你贵不贵
+2. 平替产品推荐 — 同质量更便宜的替代品
+3. 全屋预算规划 — 哪些该花、哪些能省
+
+首次咨询免费。私信发你的建材清单，帮你逐条看。
+
+#装修避坑 #建材咨询 #瓷砖平替 #省钱攻略 #建材老兵`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('.btn-primary');
+        btn.textContent = '已复制';
+        setTimeout(() => { btn.textContent = '复制文案'; }, 2000);
+      }).catch(() => {
+        // Fallback: select text for manual copy
+        const range = document.createRange();
+        range.selectNodeContents(document.querySelector('.post-card__body'));
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+      });
+    }
+  </script>
+</body>
+</html>

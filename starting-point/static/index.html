@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>启点</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    .landing {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: var(--sp-10) var(--page-padding);
+      padding-bottom: calc(var(--sp-10) + var(--safe-bottom));
+    }
+
+    .landing__icon {
+      width: 48px;
+      height: 48px;
+      margin-bottom: var(--sp-10);
+      opacity: 0;
+      animation: fadeIn 600ms ease-out 100ms forwards;
+    }
+
+    .landing__icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .landing__headline {
+      margin-bottom: var(--sp-4);
+      opacity: 0;
+      animation: fadeIn 400ms ease-out 200ms forwards;
+    }
+
+    .landing__headline-main {
+      font: var(--t-hero);
+      letter-spacing: var(--tracking-hero);
+      color: var(--text-primary);
+      display: block;
+    }
+
+    .landing__headline-gold {
+      font: var(--t-hero);
+      letter-spacing: var(--tracking-hero);
+      color: var(--gold);
+      display: block;
+    }
+
+    .landing__subtitle {
+      font: var(--t-body-sm);
+      color: var(--text-secondary);
+      margin-bottom: var(--sp-12);
+      opacity: 0;
+      animation: fadeIn 300ms ease-out 400ms forwards;
+    }
+
+    .landing__cta {
+      width: 100%;
+      max-width: 320px;
+      margin-bottom: var(--sp-3);
+      opacity: 0;
+      animation: fadeIn 300ms ease-out 500ms forwards;
+    }
+
+    .landing__steps {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--sp-4);
+      margin-top: var(--sp-12);
+      opacity: 0;
+      animation: fadeIn 300ms ease-out 600ms forwards;
+    }
+
+    .landing__step {
+      font: var(--t-caption);
+      color: var(--text-secondary);
+    }
+
+    .landing__step-num {
+      color: var(--text-tertiary);
+      font-weight: 500;
+    }
+
+    .landing__arrow {
+      color: var(--gold);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="landing">
+    <!-- Compass Icon (SVG thin line, gold stroke) -->
+    <div class="landing__icon" role="img" aria-label="启点指南针">
+      <svg viewBox="0 0 48 48" fill="none" stroke="#C9A96E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="24" cy="24" r="20"/>
+        <polygon points="24,8 28,24 24,40 20,24" fill="rgba(201,169,110,0.15)" stroke="#C9A96E"/>
+        <line x1="24" y1="4" x2="24" y2="10"/>
+        <line x1="24" y1="38" x2="24" y2="44"/>
+        <line x1="4" y1="24" x2="10" y2="24"/>
+        <line x1="38" y1="24" x2="44" y2="24"/>
+      </svg>
+    </div>
+
+    <div class="landing__headline">
+      <span class="landing__headline-main">你的经验</span>
+      <span class="landing__headline-gold">比你想象的更值钱</span>
+    </div>
+
+    <p class="landing__subtitle">3个步骤，找到变现方向</p>
+
+    <div class="landing__cta">
+      <button class="btn-primary" onclick="location.href='chat-self-discovery.html'" aria-label="开始探索">开始</button>
+    </div>
+
+    <div class="landing__steps">
+      <span class="landing__step"><span class="landing__step-num">①</span> 认识自己</span>
+      <span class="landing__arrow">→</span>
+      <span class="landing__step"><span class="landing__step-num">②</span> 规划路径</span>
+      <span class="landing__arrow">→</span>
+      <span class="landing__step"><span class="landing__step-num">③</span> 开张行动</span>
+    </div>
+  </div>
+</body>
+</html>

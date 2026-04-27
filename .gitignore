@@ -7,9 +7,7 @@ run.log
 surfaces.txt
 surface-verify-prompt.md
 build-2-closeout.md
-career-compass/.venv/
-career-compass/__pycache__/
-career-compass/**/__pycache__/
-career-compass/**/*.pyc
-career-compass/.env
-career-compass/*.db
+starting-point/.env
+starting-point/*.db
+*.egg-info/
+.gstack/
