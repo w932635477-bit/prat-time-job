@@ -4,8 +4,19 @@ from starting_point.engine.registry import SkillRegistry
 from starting_point.engine.state import StateManager
 from starting_point.models import (
     ChatMessage, ChatResponse, SkillType, UserState, SkillOutput,
-    SkillStepResult,
+    SkillStepResult, PhaseResult,
 )
+
+
+# V2 skill ordering: when a skill completes, advance to the next in this list
+V2_SKILL_ORDER = [
+    SkillType.ASSESSMENT,
+    SkillType.SELF_DISCOVERY,
+    SkillType.PRODUCT_PACKAGING,
+    SkillType.CUSTOMER_ACQUISITION,
+    SkillType.FIRST_DEAL,
+    SkillType.GROWTH,
+]
 
 
 class SkillRunner:
@@ -25,6 +36,15 @@ class SkillRunner:
             state = UserState(user_id=user_id)
             await self.state_manager.save_state(state)
         return state
+
+    def _get_next_skill(self, current: SkillType) -> SkillType | None:
+        try:
+            idx = V2_SKILL_ORDER.index(current)
+        except ValueError:
+            return None
+        if idx + 1 < len(V2_SKILL_ORDER):
+            return V2_SKILL_ORDER[idx + 1]
+        return None
 
     async def process_message(
         self,
@@ -57,6 +77,8 @@ class SkillRunner:
                     summary="环节完成",
                 ),
                 skill_completed=True,
+                output=output_data,
+                current_step=state.current_step_index,
             )
 
         # Record answer
@@ -77,20 +99,64 @@ class SkillRunner:
 
         next_step = skill.get_step(state.current_step_index)
         if next_step is None:
+            # Current skill completed — generate output, save phase result, advance
             output_data = await skill.generate_output(state)
+
+            # Save to phase_results
+            phase_key = str(skill.order)
+            state.phase_results[phase_key] = PhaseResult(
+                phase=skill.order, data=output_data,
+            )
+
+            # Try to advance to next skill
+            next_skill_type = self._get_next_skill(state.current_skill)
+            if next_skill_type:
+                state.current_skill = next_skill_type
+                state.current_step_index = 0
+                state.step_results = []
+                state.completed_steps = []
+                await self.state_manager.save_state(state)
+
+                # Show next skill's first question
+                next_skill = self.registry.get(next_skill_type)
+                first_step = next_skill.get_step(0)
+
+                overall_progress = (skill.order + 1) / len(V2_SKILL_ORDER)
+
+                return ChatResponse(
+                    message=ChatMessage(
+                        role="assistant",
+                        content=f'"{skill.name}"完成了。接下来进入"{next_skill.name}"阶段。',
+                        confidence_boost=result.confidence_boost,
+                    ),
+                    progress=overall_progress,
+                    deliverable=SkillOutput(
+                        skill_type=skill.current_skill if hasattr(skill, 'current_skill') else state.current_skill,
+                        data=output_data,
+                        summary=f"{skill.name}完成",
+                    ),
+                    skill_completed=True,
+                    output=output_data,
+                    current_step=0,
+                )
+
+            # All phases completed
+            await self.state_manager.save_state(state)
             return ChatResponse(
                 message=ChatMessage(
                     role="assistant",
-                    content="你已完成这个环节！",
+                    content="恭喜！你已经完成了所有阶段。从今天开始，你不再是一个失业的人——你是一个有自己的小生意的人。",
                     confidence_boost=result.confidence_boost,
                 ),
                 progress=1.0,
                 deliverable=SkillOutput(
                     skill_type=state.current_skill,
                     data=output_data,
-                    summary="环节完成",
+                    summary="全部完成",
                 ),
                 skill_completed=True,
+                output=output_data,
+                current_step=state.current_step_index,
             )
 
         progress = state.current_step_index / skill.total_steps
@@ -142,4 +208,5 @@ class SkillRunner:
                 confidence_boost=confidence_boost,
             ),
             progress=index / total if total > 0 else 0.0,
+            current_step=index,
         )

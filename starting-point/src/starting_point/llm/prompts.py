@@ -109,3 +109,142 @@ class PromptBuilder:
         return CONTENT_GENERATION_TEMPLATE.format(
             platform=platform, offer=offer, background=background,
         )
+
+    # --- V2 Prompt Templates ---
+
+    ASSESSMENT_STRATEGY_TEMPLATE = """你是启点的用户评估顾问。根据以下用户情况，生成个性化策略。
+
+数字能力：{digital_literacy}
+心理准备：{mental_readiness}
+时间投入：{time_commitment}
+经济压力：{financial_pressure}
+
+请以JSON格式返回：
+{{
+  "profile_tag": "一个简短的标签",
+  "content_pace": "slow/normal/fast",
+  "first_milestone": "第一个小目标",
+  "expectation_tone": "期望管理话术",
+  "strategy_summary": "3句话以内的策略建议"
+}}"""
+
+    PRODUCT_CARD_TEMPLATE = """你是启点的产品包装顾问。根据用户的行业和资产，设计一个可以卖的服务产品。
+
+行业：{industry}
+可定价资产：{assets}
+用户画像：{assessment_tag}
+
+请以JSON格式返回：
+{{
+  "service_name": "服务名称",
+  "tagline": "一句话定位",
+  "target_customer": "目标客户描述",
+  "pricing": {{
+    "trial_price": "体验价",
+    "standard_price": "正式价区间",
+    "package_price": "套餐价"
+  }},
+  "service_flow": ["步骤1", "步骤2", "步骤3", "步骤4"],
+  "deliverables": "交付物描述",
+  "tools_recommended": ["推荐工具1", "推荐工具2"]
+}}"""
+
+    CONTENT_WEEK_TEMPLATE = """你是启点的内容策划师。为一个{industry}行业的用户，在{platform}上生成第{week}周的内容。
+
+周主题：{theme}
+服务产品：{service_name}
+本周需要生成：{pieces}条内容
+
+请以JSON格式返回：
+{{
+  "week_theme": "本周主题",
+  "emotional_support": "情绪管理话术，真实不空洞",
+  "content_pieces": [
+    {{
+      "day": 1,
+      "type": "经验分享/避坑指南/故事/互动问答",
+      "title": "标题",
+      "script": "具体脚本或文案",
+      "tags": ["标签1", "标签2"]
+    }}
+  ],
+  "next_week_hint": "下周方向建议"
+}}"""
+
+    FIRST_DEAL_TEMPLATE = """你是启点的首单教练。根据用户的服务产品，生成完成首单所需的所有工具。
+
+服务产品：{service_name}
+定价：{pricing}
+服务流程：{service_flow}
+
+请以JSON格式返回：
+{{
+  "communication_templates": {{
+    "price_inquiry": "客户问价时的回复话术",
+    "service_inquiry": "客户问服务时的回复话术",
+    "hesitant_client": "客户犹豫时的回复话术"
+  }},
+  "pricing_formula": "具体报价公式",
+  "payment_methods": [
+    {{"method": "方式名", "how": "怎么操作", "tip": "注意事项"}}
+  ],
+  "delivery_checklist": ["交付步骤1", "交付步骤2"],
+  "post_delivery": "交付后引导客户反馈的话术"
+}}"""
+
+    GROWTH_TEMPLATE = """你是启点的增长顾问。用户刚完成了首单，需要指导下一步。
+
+服务产品：{service_name}
+首单价格：{first_deal_price}元
+获客渠道：{channel}
+
+请以JSON格式返回：
+{{
+  "testimonial_to_content": "把客户好评变成内容的方法",
+  "pricing_adjustment": "什么时候涨价、涨多少的具体建议",
+  "referral_mechanism": "转介绍的具体方案",
+  "repeat_purchase": "复购产品设计建议"
+}}"""
+
+    def build_assessment_strategy_prompt(
+        self, digital_literacy: str, mental_readiness: str,
+        time_commitment: str, financial_pressure: str,
+    ) -> str:
+        return self.ASSESSMENT_STRATEGY_TEMPLATE.format(
+            digital_literacy=digital_literacy,
+            mental_readiness=mental_readiness,
+            time_commitment=time_commitment,
+            financial_pressure=financial_pressure,
+        )
+
+    def build_product_card_prompt(
+        self, industry: str, assets: str, assessment_tag: str,
+    ) -> str:
+        return self.PRODUCT_CARD_TEMPLATE.format(
+            industry=industry, assets=assets, assessment_tag=assessment_tag,
+        )
+
+    def build_content_week_prompt(
+        self, week: int, theme: str, industry: str,
+        platform: str, service_name: str, pieces: int,
+    ) -> str:
+        return self.CONTENT_WEEK_TEMPLATE.format(
+            week=week, theme=theme, industry=industry,
+            platform=platform, service_name=service_name, pieces=pieces,
+        )
+
+    def build_first_deal_prompt(
+        self, service_name: str, pricing: str, service_flow: str,
+    ) -> str:
+        return self.FIRST_DEAL_TEMPLATE.format(
+            service_name=service_name, pricing=pricing,
+            service_flow=service_flow,
+        )
+
+    def build_growth_prompt(
+        self, service_name: str, first_deal_price: int, channel: str,
+    ) -> str:
+        return self.GROWTH_TEMPLATE.format(
+            service_name=service_name,
+            first_deal_price=first_deal_price, channel=channel,
+        )

@@ -6,7 +6,14 @@ from pydantic import BaseModel, Field
 
 
 class SkillType(str, Enum):
+    # V2 phases (ordered 0-5)
+    ASSESSMENT = "assessment"
     SELF_DISCOVERY = "self_discovery"
+    PRODUCT_PACKAGING = "product_packaging"
+    CUSTOMER_ACQUISITION = "customer_acquisition"
+    FIRST_DEAL = "first_deal"
+    GROWTH = "growth"
+    # V1 backward compat
     PLAN_PATH = "plan_path"
     TAKE_ACTION = "take_action"
     TROUBLESHOOT = "troubleshoot"
@@ -77,9 +84,43 @@ class SkillOutput(BaseModel):
     summary: str
 
 
+class UserAssessment(BaseModel):
+    digital_literacy: str = ""
+    mental_readiness: str = ""
+    time_commitment: str = ""
+    financial_pressure: str = ""
+    profile_tag: str = ""
+    content_pace: str = "normal"
+    first_milestone: str = ""
+    expectation_tone: str = ""
+
+
+class ContentWeek(BaseModel):
+    week: int
+    theme: str
+    pieces: int
+    status: str = "not_started"
+    generated_content: list[dict] = Field(default_factory=list)
+
+
+class ContentPlan(BaseModel):
+    platform: str = "xiaohongshu"
+    total_pieces: int = 30
+    weeks: list[ContentWeek] = Field(default_factory=list)
+    paused: bool = False
+    current_week: int = 1
+
+
+class PhaseResult(BaseModel):
+    phase: int
+    data: dict = Field(default_factory=dict)
+    version: int = 1
+    created_at: datetime = Field(default_factory=datetime.now)
+
+
 class UserState(BaseModel):
     user_id: str
-    current_skill: SkillType = SkillType.SELF_DISCOVERY
+    current_skill: SkillType = SkillType.ASSESSMENT
     current_step_index: int = 0
     completed_steps: list[str] = Field(default_factory=list)
     step_results: list[SkillStepResult] = Field(default_factory=list)
@@ -89,6 +130,10 @@ class UserState(BaseModel):
     started: bool = False
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
+    # V2 fields
+    assessment: UserAssessment | None = None
+    phase_results: dict[str, PhaseResult] = Field(default_factory=dict)
+    content_plan: ContentPlan | None = None
 
 
 class ChatMessage(BaseModel):
@@ -111,3 +156,5 @@ class ChatResponse(BaseModel):
     progress: float
     deliverable: SkillOutput | None = None
     skill_completed: bool = False
+    output: dict | None = None
+    current_step: int | None = None

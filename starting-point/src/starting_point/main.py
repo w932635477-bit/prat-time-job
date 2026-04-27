@@ -14,20 +14,24 @@ from starting_point.engine.runner import SkillRunner
 from starting_point.engine.state import StateManager
 from starting_point.llm.client import DeepSeekClient
 from starting_point.models import ChatRequest, ChatResponse, SkillType
+from starting_point.skills.assessment import AssessmentSkill
 from starting_point.skills.self_discovery import SelfDiscoverySkill
-from starting_point.skills.plan_path import PlanPathSkill
-from starting_point.skills.take_action import TakeActionSkill
-from starting_point.skills.troubleshoot import TroubleshootSkill
+from starting_point.skills.product_packaging import ProductPackagingSkill
+from starting_point.skills.customer_acquisition import CustomerAcquisitionSkill
+from starting_point.skills.first_deal import FirstDealSkill
+from starting_point.skills.growth import GrowthSkill
 
 STATIC_DIR = Path(__file__).resolve().parent.parent.parent / "static"
 
 
 def create_registry(llm_client: DeepSeekClient | None = None) -> SkillRegistry:
     registry = SkillRegistry()
+    registry.register(SkillType.ASSESSMENT, AssessmentSkill(llm_client))
     registry.register(SkillType.SELF_DISCOVERY, SelfDiscoverySkill(llm_client))
-    registry.register(SkillType.PLAN_PATH, PlanPathSkill(llm_client))
-    registry.register(SkillType.TAKE_ACTION, TakeActionSkill(llm_client))
-    registry.register(SkillType.TROUBLESHOOT, TroubleshootSkill())
+    registry.register(SkillType.PRODUCT_PACKAGING, ProductPackagingSkill(llm_client))
+    registry.register(SkillType.CUSTOMER_ACQUISITION, CustomerAcquisitionSkill(llm_client))
+    registry.register(SkillType.FIRST_DEAL, FirstDealSkill(llm_client))
+    registry.register(SkillType.GROWTH, GrowthSkill(llm_client))
     return registry
 
 
