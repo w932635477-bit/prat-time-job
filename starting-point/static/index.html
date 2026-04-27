@@ -66,35 +66,58 @@
       animation: fadeIn 300ms ease-out 500ms forwards;
     }
 
-    .landing__steps {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: var(--sp-4);
-      margin-top: var(--sp-12);
+    .landing__phases {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--sp-3);
+      width: 100%;
+      max-width: 360px;
+      margin-top: var(--sp-10);
       opacity: 0;
       animation: fadeIn 300ms ease-out 600ms forwards;
     }
 
-    .landing__step {
+    .landing__phase {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+      padding: var(--sp-3);
+      background: var(--bg-secondary);
+      border-radius: var(--r-md);
+      text-align: left;
+    }
+
+    .landing__phase-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--gold-subtle);
+      color: var(--gold);
+      font: var(--t-micro);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .landing__phase-text {
       font: var(--t-caption);
       color: var(--text-secondary);
     }
 
-    .landing__step-num {
-      color: var(--text-tertiary);
+    .landing__phase-name {
       font-weight: 500;
+      color: var(--text-primary);
+      display: block;
     }
 
-    .landing__arrow {
-      color: var(--gold);
-      font-size: 12px;
+    .landing__phase-desc {
+      display: block;
     }
   </style>
 </head>
 <body>
   <div class="landing">
-    <!-- Compass Icon (SVG thin line, gold stroke) -->
     <div class="landing__icon" role="img" aria-label="启点指南针">
       <svg viewBox="0 0 48 48" fill="none" stroke="#C9A96E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="24" cy="24" r="20"/>
@@ -107,22 +130,59 @@
     </div>
 
     <div class="landing__headline">
-      <span class="landing__headline-main">你的经验</span>
-      <span class="landing__headline-gold">比你想象的更值钱</span>
+      <span class="landing__headline-main">启点</span>
+      <span class="landing__headline-gold">陪你赚到第一块钱</span>
     </div>
 
-    <p class="landing__subtitle">3个步骤，找到变现方向</p>
+    <p class="landing__subtitle">从"我什么都不会"到"赚到第一笔钱"</p>
 
     <div class="landing__cta">
-      <button class="btn-primary" onclick="location.href='chat-self-discovery.html'" aria-label="开始探索">开始</button>
+      <button class="btn-primary" onclick="location.href='app.html'" aria-label="开始旅程">开始你的旅程</button>
     </div>
 
-    <div class="landing__steps">
-      <span class="landing__step"><span class="landing__step-num">①</span> 认识自己</span>
-      <span class="landing__arrow">→</span>
-      <span class="landing__step"><span class="landing__step-num">②</span> 规划路径</span>
-      <span class="landing__arrow">→</span>
-      <span class="landing__step"><span class="landing__step-num">③</span> 开张行动</span>
+    <div class="landing__phases">
+      <div class="landing__phase">
+        <div class="landing__phase-num">0</div>
+        <div class="landing__phase-text">
+          <span class="landing__phase-name">起跑评估</span>
+          <span class="landing__phase-desc">了解你的起点</span>
+        </div>
+      </div>
+      <div class="landing__phase">
+        <div class="landing__phase-num">1</div>
+        <div class="landing__phase-text">
+          <span class="landing__phase-name">发现金矿</span>
+          <span class="landing__phase-desc">发现你能卖什么</span>
+        </div>
+      </div>
+      <div class="landing__phase">
+        <div class="landing__phase-num">2</div>
+        <div class="landing__phase-text">
+          <span class="landing__phase-name">包装产品</span>
+          <span class="landing__phase-desc">把经验变成服务</span>
+        </div>
+      </div>
+      <div class="landing__phase">
+        <div class="landing__phase-num">3</div>
+        <div class="landing__phase-text">
+          <span class="landing__phase-name">找到客户</span>
+          <span class="landing__phase-desc">30天内容计划</span>
+        </div>
+      </div>
+      <div class="landing__phase">
+        <div class="landing__phase-num">4</div>
+        <div class="landing__phase-text">
+          <span class="landing__phase-name">完成首单</span>
+          <span class="landing__phase-desc">搞定第一单</span>
+        </div>
+      </div>
+      <div class="landing__phase">
+        <div class="landing__phase-num">5</div>
+        <div class="landing__phase-text">
+          <span class="landing__phase-name">转起来</span>
+          <span class="landing__phase-desc">持续赚钱</span>
+        </div>
+      </div>
     </div>
   </div>
 </body>

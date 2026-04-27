@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>启点 — 陪你赚到第一块钱</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    .chat-area {
+      padding-top: calc(var(--header-height) + 2px + 32px + var(--sp-4));
+      padding-bottom: calc(var(--input-height) + var(--sp-3) + var(--safe-bottom) + var(--sp-3));
+      padding-left: var(--page-padding);
+      padding-right: var(--page-padding);
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    .chat-area__messages {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-row {
+      margin-bottom: var(--sp-3);
+    }
+
+    .chat-row--ai {
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    .chat-row--user {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .chat-row--confidence {
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    .chat-row--loading {
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    .chat-row--options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sp-3);
+      padding-top: var(--sp-1);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <button class="app-header__back" onclick="location.href='index.html'" aria-label="返回首页">←</button>
+    <span class="app-header__title">启点</span>
+  </header>
+
+  <!-- Progress Bar -->
+  <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="旅程进度">
+    <div class="progress-bar__fill" style="width: 0%"></div>
+  </div>
+
+  <!-- Progress Chip -->
+  <div id="progress-chip" class="progress-chip" aria-label="阶段进度">第 1/6 阶段 · 起跑评估</div>
+
+  <!-- Chat Area -->
+  <div class="chat-area">
+    <div id="chat-messages" class="chat-area__messages" role="log" aria-live="polite" aria-label="对话内容">
+    </div>
+  </div>
+
+  <!-- Input Bar -->
+  <div class="input-bar">
+    <div class="input-bar__inner">
+      <input class="input-bar__field" type="text" placeholder="说点什么..." id="chatInput" aria-label="输入消息">
+      <button class="input-bar__send" id="sendBtn" aria-label="发送消息">↑</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
