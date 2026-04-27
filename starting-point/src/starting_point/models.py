@@ -158,3 +158,70 @@ class ChatResponse(BaseModel):
     skill_completed: bool = False
     output: dict | None = None
     current_step: int | None = None
+
+
+class User(BaseModel):
+    id: str
+    wx_openid: str
+    wx_unionid: str = ""
+    nickname: str = ""
+    avatar_url: str = ""
+    phone: str = ""
+    tier: str = "free"
+    tier_expires_at: datetime | None = None
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+
+class Order(BaseModel):
+    id: str
+    user_id: str
+    tier: str
+    amount: int  # price in fen (cents)
+    wx_prepay_id: str = ""
+    wx_transaction_id: str = ""
+    status: str = "pending"
+    paid_at: datetime | None = None
+    created_at: datetime = Field(default_factory=datetime.now)
+
+
+class UserProfile(BaseModel):
+    user_id: str
+    industry: str = ""
+    years_experience: int = 0
+    goals: str = ""
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+
+TIER_DEFINITIONS: dict[str, dict] = {
+    "free": {
+        "label": "免费体验",
+        "price_fen": 0,
+        "description": "Phase 0 + Phase 1 + Phase 2 预览",
+        "duration_days": None,
+    },
+    "low_ticket": {
+        "label": "产品包装",
+        "price_fen": 1990,
+        "description": "完整 Phase 2（产品包装 + 定价）",
+        "duration_days": 60,
+    },
+    "standard": {
+        "label": "完整方案",
+        "price_fen": 5900,
+        "description": "Phase 2-5 全部（包装 + 获客 + 首单 + 增长）",
+        "duration_days": 60,
+    },
+    "human": {
+        "label": "人工辅导",
+        "price_fen": 19900,
+        "description": "完整方案 + 一次人工审核 + 微信群答疑30天",
+        "duration_days": 90,
+    },
+}
+
+
+class PaywallResponse(BaseModel):
+    paywall: bool = True
+    preview_data: dict = Field(default_factory=dict)
+    tiers: list[dict] = Field(default_factory=list)
