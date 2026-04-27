@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+import aiosqlite
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi import HTTPException
 from fastapi.staticfiles import StaticFiles
 
+from starting_point.auth.routes import router as auth_router
 from starting_point.config import settings
+from starting_point.db.user_repo import UserRepo
 from starting_point.engine.registry import SkillRegistry
 from starting_point.engine.runner import SkillRunner
 from starting_point.engine.state import StateManager
@@ -42,7 +46,10 @@ async def lifespan(app: FastAPI):
     state_manager = StateManager(settings.database_path)
     await state_manager.initialize()
     app.state.runner = SkillRunner(registry, state_manager, llm_client)
+    db_conn = await aiosqlite.connect(settings.database_path)
+    app.state.user_repo = UserRepo(db_conn)
     yield
+    await db_conn.close()
 
 
 app = FastAPI(
@@ -58,6 +65,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
+
 
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest) -> ChatResponse:
@@ -70,7 +79,10 @@ async def chat(request: ChatRequest) -> ChatResponse:
 @app.post("/api/back/{user_id}/{step_id}", response_model=ChatResponse)
 async def go_back(user_id: str, step_id: str) -> ChatResponse:
     runner: SkillRunner = app.state.runner
-    return await runner.go_back(user_id, step_id)
+    try:
+        return await runner.go_back(user_id, step_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.get("/api/state/{user_id}")
