@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
 from starting_point.auth.jwt import create_token
-from starting_point.auth.middleware import get_current_user
+from starting_point.auth.middleware import extract_bearer, get_current_user
 from starting_point.auth.wechat import build_authorize_url, exchange_code_for_token, get_user_info
 from starting_point.config import settings
 from starting_point.db.user_repo import UserRepo
@@ -61,7 +61,7 @@ async def wechat_callback(code: str | None = None, state: str | None = None, req
 
 @router.get("/me")
 async def get_me(request: Request):
-    token = request.cookies.get("token") or _extract_bearer(request)
+    token = request.cookies.get("token") or extract_bearer(request)
     if not token:
         raise HTTPException(401, "Not authenticated")
     repo = _get_repo(request)
@@ -69,10 +69,3 @@ async def get_me(request: Request):
     if not user:
         raise HTTPException(401, "Invalid token")
     return user.model_dump()
-
-
-def _extract_bearer(request: Request) -> str | None:
-    auth = request.headers.get("authorization", "")
-    if auth.startswith("Bearer "):
-        return auth[7:]
-    return None

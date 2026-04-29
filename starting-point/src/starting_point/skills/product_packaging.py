@@ -62,7 +62,7 @@ class ProductPackagingSkill(BaseSkill):
     ) -> StepResult:
         return StepResult(next_step=True)
 
-    async def generate_output(self, state: UserState) -> dict:
+    async def generate_output(self, state: UserState) -> tuple[dict, dict]:
         constraints = {
             r.step_id: r.free_text or r.answer
             for r in state.step_results
@@ -70,10 +70,9 @@ class ProductPackagingSkill(BaseSkill):
 
         phase1_result = state.phase_results.get("1")
         assets = phase1_result.data.get("asset_map", {}) if phase1_result else {}
-        industry = getattr(state, "industry", None) or "未知行业"
 
         if self._llm is None:
-            return {"skill_type": "product_packaging", "constraints": constraints}
+            return {"skill_type": "product_packaging", "constraints": constraints}, {}
 
         assets_str = json.dumps(assets, ensure_ascii=False) if isinstance(assets, dict) else str(assets)
         assessment_tag = ""
@@ -81,13 +80,13 @@ class ProductPackagingSkill(BaseSkill):
             assessment_tag = state.assessment.profile_tag
 
         prompt = self._prompt_builder.build_product_card_prompt(
-            industry=industry, assets=assets_str, assessment_tag=assessment_tag,
+            industry="未知行业", assets=assets_str, assessment_tag=assessment_tag,
         )
         raw = await self._llm.chat(
             messages=[{"role": "user", "content": prompt}],
             system="你是启点的产品包装顾问。",
         )
-        return {"skill_type": "product_packaging", "constraints": constraints, "product_card": _parse_json(raw)}
+        return {"skill_type": "product_packaging", "constraints": constraints, "product_card": _parse_json(raw)}, {}
 
 
 def _parse_json(text: str) -> dict:

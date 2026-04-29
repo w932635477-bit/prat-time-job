@@ -41,5 +41,6 @@ class BaseSkill(ABC):
         ...
 
     @abstractmethod
-    async def generate_output(self, state: UserState) -> dict:
+    async def generate_output(self, state: UserState) -> tuple[dict, dict]:
+        """Returns (output_data, state_updates) where state_updates is applied to UserState."""
         ...

@@ -27,5 +27,5 @@ class TroubleshootSkill(BaseSkill):
     ) -> StepResult:
         return StepResult(next_step=True)
 
-    async def generate_output(self, state: UserState) -> dict:
-        return {"skill_type": "troubleshoot", "status": "resolved"}
+    async def generate_output(self, state: UserState) -> tuple[dict, dict]:
+        return {"skill_type": "troubleshoot", "status": "resolved"}, {}

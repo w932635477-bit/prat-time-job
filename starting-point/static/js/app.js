@@ -7,6 +7,7 @@ import { getPhase, getPhaseName, getTotalPhases, getRenderer } from './phases/in
 
 const API_BASE = '/api';
 let state;
+let sending = false;
 
 // --- DOM helpers ---
 
@@ -25,7 +26,12 @@ function scrollToBottom() {
 function renderBubbleAi(text) {
   const row = document.createElement('div');
   row.className = 'chat-row chat-row--ai fade-in';
-  row.innerHTML = `<div class="bubble-ai">${text}</div>`;
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble-ai';
+  bubble.textContent = text;
+  bubble.setAttribute('role', 'status');
+  bubble.setAttribute('aria-live', 'polite');
+  row.appendChild(bubble);
   return row;
 }
 
@@ -53,12 +59,18 @@ function renderLoading() {
 function renderOptions(options, onSelect) {
   const row = document.createElement('div');
   row.className = 'chat-row chat-row--options fade-in';
+  let busy = false;
   options.forEach(opt => {
     const btn = document.createElement('button');
     btn.className = 'option-btn';
     btn.textContent = opt.label;
     btn.addEventListener('click', () => {
-      row.querySelectorAll('.option-btn').forEach(b => b.classList.remove('option-btn--selected'));
+      if (busy) return;
+      busy = true;
+      row.querySelectorAll('.option-btn').forEach(b => {
+        b.classList.remove('option-btn--selected');
+        b.disabled = true;
+      });
       btn.classList.add('option-btn--selected');
       onSelect(opt);
     });
@@ -69,6 +81,13 @@ function renderOptions(options, onSelect) {
 
 function getMessagesContainer() {
   return $('#chat-messages');
+}
+
+function toggleInput(enabled) {
+  const input = $('#chatInput');
+  const sendBtn = $('#sendBtn');
+  if (input) input.disabled = !enabled;
+  if (sendBtn) sendBtn.disabled = !enabled;
 }
 
 // --- Progress bar ---
@@ -118,8 +137,12 @@ async function apiGoBack(stepId) {
 // --- Send message flow ---
 
 async function sendMessage(text) {
+  if (sending) return;
   const messages = getMessagesContainer();
   if (!messages) return;
+
+  sending = true;
+  toggleInput(false);
 
   messages.appendChild(renderBubbleUserText(text));
   state = store.appendHistory(state, 'user', text);
@@ -137,10 +160,17 @@ async function sendMessage(text) {
     loadingEl.remove();
     messages.appendChild(renderBubbleAi('抱歉，出了点问题。请重试。'));
     console.error('API error:', err);
+  } finally {
+    sending = false;
+    toggleInput(true);
   }
 }
 
 async function handleOptionSelect(opt) {
+  if (sending) return;
+  sending = true;
+  toggleInput(false);
+
   const messages = getMessagesContainer();
 
   messages.appendChild(renderBubbleUserOption(opt.label));
@@ -164,6 +194,9 @@ async function handleOptionSelect(opt) {
     loadingEl.remove();
     messages.appendChild(renderBubbleAi('抱歉，出了点问题。请重试。'));
     console.error('API error:', err);
+  } finally {
+    sending = false;
+    toggleInput(true);
   }
 }
 
@@ -250,7 +283,15 @@ function setupProgressGrid() {
 
       if (i < state.currentPhase) {
         item.classList.add('progress-grid__item--completed');
-        item.innerHTML = `<span class="progress-grid__icon">✓</span><span class="progress-grid__name">${p.name}</span>`;
+        item.textContent = '';
+        const icon = document.createElement('span');
+        icon.className = 'progress-grid__icon';
+        icon.textContent = '✓';
+        const name = document.createElement('span');
+        name.className = 'progress-grid__name';
+        name.textContent = p.name;
+        item.appendChild(icon);
+        item.appendChild(name);
         item.addEventListener('click', () => {
           if (confirm(`回到"${p.name}"？当前进度会保留。`)) {
             state = store.goBack(state, i, 0);
@@ -261,10 +302,26 @@ function setupProgressGrid() {
         });
       } else if (i === state.currentPhase) {
         item.classList.add('progress-grid__item--current');
-        item.innerHTML = `<span class="progress-grid__icon">●</span><span class="progress-grid__name">${p.name}</span>`;
+        item.textContent = '';
+        const icon = document.createElement('span');
+        icon.className = 'progress-grid__icon';
+        icon.textContent = '●';
+        const name = document.createElement('span');
+        name.className = 'progress-grid__name';
+        name.textContent = p.name;
+        item.appendChild(icon);
+        item.appendChild(name);
       } else {
         item.classList.add('progress-grid__item--future');
-        item.innerHTML = `<span class="progress-grid__icon">○</span><span class="progress-grid__name">${p.name}</span>`;
+        item.textContent = '';
+        const icon = document.createElement('span');
+        icon.className = 'progress-grid__icon';
+        icon.textContent = '○';
+        const name = document.createElement('span');
+        name.className = 'progress-grid__name';
+        name.textContent = p.name;
+        item.appendChild(icon);
+        item.appendChild(name);
       }
 
       gridEl.appendChild(item);
@@ -303,10 +360,10 @@ function renderPaywall(previewData, tiers) {
       <div class="paywall__subtitle">选择适合你的方案，继续你的旅程</div>
       <div class="pricing-grid">
         ${tiers.map(t => `
-          <div class="pricing-card ${t.key === 'standard' ? 'pricing-card--popular' : ''}" data-tier="${t.key}">
-            <div class="pricing-card__name">${t.label}</div>
+          <div class="pricing-card ${t.key === 'standard' ? 'pricing-card--popular' : ''}" data-tier="${escapeHtml(t.key)}">
+            <div class="pricing-card__name">${escapeHtml(t.label)}</div>
             <div class="pricing-card__price">&yen;${(t.price_fen / 100).toFixed(1)} <span>/${t.duration_days}天</span></div>
-            <div class="pricing-card__desc">${t.description}</div>
+            <div class="pricing-card__desc">${escapeHtml(t.description)}</div>
           </div>
         `).join('')}
       </div>
@@ -348,6 +405,11 @@ function formatPreview(data) {
 }
 
 // --- Init ---
+
+function removeWelcomeSkeleton() {
+  const skeleton = document.getElementById('welcome-skeleton');
+  if (skeleton) skeleton.remove();
+}
 
 async function initApp() {
   // Auth guard
@@ -398,9 +460,19 @@ async function initApp() {
   setupProgressGrid();
 
   try {
+    const stateResp = await fetchWithAuth(`${API_BASE}/state/${state.userId}`);
+    if (stateResp && stateResp.ok) {
+      const serverState = await stateResp.json();
+      if (serverState && !serverState.error && serverState.started) {
+        removeWelcomeSkeleton();
+        return;
+      }
+    }
     const response = await apiChat('你好', null);
+    removeWelcomeSkeleton();
     handleResponse(response);
   } catch (err) {
+    removeWelcomeSkeleton();
     messages.appendChild(renderBubbleAi('连接失败，请刷新页面重试。'));
     console.error('Init error:', err);
   }

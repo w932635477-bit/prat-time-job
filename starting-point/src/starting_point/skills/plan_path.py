@@ -76,14 +76,14 @@ class PlanPathSkill(BaseSkill):
     ) -> StepResult:
         return StepResult(next_step=True)
 
-    async def generate_output(self, state: UserState) -> dict:
+    async def generate_output(self, state: UserState) -> tuple[dict, dict]:
         constraints = {
             r.step_id: r.free_text or r.answer
             for r in state.step_results
         }
 
         if self._llm is None:
-            return {"skill_type": "plan_path", "constraints": constraints}
+            return {"skill_type": "plan_path", "constraints": constraints}, {}
 
         asset_map = state.asset_map
         asset_str = (
@@ -105,13 +105,13 @@ class PlanPathSkill(BaseSkill):
             offers = self._parse_json(raw)
         except Exception:
             logger.exception("LLM offer generation failed, returning raw constraints")
-            return {"skill_type": "plan_path", "constraints": constraints}
+            return {"skill_type": "plan_path", "constraints": constraints}, {}
 
         return {
             "skill_type": "plan_path",
             "constraints": constraints,
             "offers": offers,
-        }
+        }, {}
 
     def _parse_json(self, text: str) -> dict | list:
         # Try array first (offer template returns JSON array)

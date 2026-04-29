@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8000
     jwt_secret: str = "dev-secret-change-in-prod"
-    jwt_expiry_hours: int = 168
+    jwt_expiry_hours: int = 24
     wx_app_id: str = ""
     wx_app_secret: str = ""
     wx_pay_mch_id: str = ""

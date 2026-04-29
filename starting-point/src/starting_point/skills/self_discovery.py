@@ -88,7 +88,7 @@ class SelfDiscoverySkill(BaseSkill):
 
         return StepResult(next_step=True)
 
-    async def generate_output(self, state: UserState) -> dict:
+    async def generate_output(self, state: UserState) -> tuple[dict, dict]:
         answers = []
         for result in state.step_results:
             answers.append(
@@ -96,11 +96,12 @@ class SelfDiscoverySkill(BaseSkill):
             )
 
         if self._llm is None:
-            return {
+            output = {
                 "skill_type": "self_discovery",
                 "answers": answers,
                 "total_steps_completed": len(state.step_results),
             }
+            return output, {}
 
         prompt = self._prompt_builder.build_extraction_prompt(
             "\n".join(answers),
@@ -114,18 +115,37 @@ class SelfDiscoverySkill(BaseSkill):
             asset_data = self._parse_json(raw)
         except Exception:
             logger.exception("LLM extraction failed, returning raw answers")
-            return {
+            output = {
                 "skill_type": "self_discovery",
                 "answers": answers,
                 "total_steps_completed": len(state.step_results),
             }
+            return output, {}
 
-        return {
+        from starting_point.models import AssetMap, CapabilityItem, ConfidenceLevel
+        capabilities = [
+            CapabilityItem(
+                name=c.get("name", ""),
+                description=c.get("description", ""),
+                evidence=c.get("evidence", ""),
+                estimated_value=c.get("estimated_value"),
+            )
+            for c in asset_data.get("capabilities", [])
+        ]
+        conf_str = asset_data.get("confidence_level", "medium")
+        asset_map = AssetMap(
+            capabilities=capabilities,
+            resources=asset_data.get("resources", []),
+            confidence_level=ConfidenceLevel(conf_str) if conf_str in ("low", "medium", "high") else ConfidenceLevel.MEDIUM,
+            raw_stories=asset_data.get("raw_stories", []),
+        )
+        output = {
             "skill_type": "self_discovery",
             "answers": answers,
             "asset_map": asset_data,
             "total_steps_completed": len(state.step_results),
         }
+        return output, {"asset_map": asset_map}
 
     def _parse_json(self, text: str) -> dict:
         start = text.find("{")

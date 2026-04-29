@@ -6,30 +6,7 @@
   <title>规划路径 — 启点</title>
   <link rel="stylesheet" href="design-system.css">
   <style>
-    .chat-area {
-      padding-top: calc(var(--header-height) + 2px + var(--sp-4));
-      padding-bottom: calc(var(--input-height) + var(--sp-3) + var(--safe-bottom) + var(--sp-3));
-      padding-left: var(--page-padding);
-      padding-right: var(--page-padding);
-      max-width: var(--max-width);
-      margin: 0 auto;
-    }
-
-    .chat-area__messages {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .chat-row {
-      margin-bottom: var(--sp-3);
-    }
-
-    .chat-row--ai { display: flex; justify-content: flex-start; }
-    .chat-row--user { display: flex; justify-content: flex-end; }
-    .chat-row--confidence { display: flex; justify-content: flex-start; }
-    .chat-row--options { display: flex; flex-wrap: wrap; gap: var(--sp-3); padding-top: var(--sp-1); }
-
-    /* Offer Card */
+    /* Offer Card (page-specific) */
     .offer-card {
       background: var(--bg-secondary);
       border-radius: var(--r-lg);
@@ -49,7 +26,6 @@
 
     .offer-card__name {
       font: var(--t-title);
-      font-size: 18px;
       color: var(--text-primary);
       margin-bottom: var(--sp-2);
     }
@@ -76,7 +52,7 @@
     }
 
     .offer-card__step-label {
-      font-size: 11px;
+      font: var(--t-micro);
       color: var(--text-tertiary);
       display: block;
       margin-bottom: var(--sp-1);
@@ -86,7 +62,7 @@
 <body>
   <!-- Header -->
   <header class="app-header">
-    <button class="app-header__back" onclick="location.href='result-self-discovery.html'">←</button>
+    <button class="app-header__back" onclick="location.href='result-self-discovery.html'" aria-label="返回上一页">←</button>
     <span class="app-header__title">规划路径</span>
     <span class="app-header__step">6/6</span>
   </header>
@@ -95,8 +71,8 @@
     <div class="progress-bar__fill" style="width: 100%"></div>
   </div>
 
-  <div class="chat-area">
-    <div class="chat-area__messages" role="log" aria-live="polite" aria-label="对话内容">
+  <div class="chat-area chat-area--no-chip">
+    <div class="chat-area__messages" role="log" aria-label="对话内容">
 
       <!-- Previous Q&A summarized -->
       <div class="chat-row chat-row--ai">

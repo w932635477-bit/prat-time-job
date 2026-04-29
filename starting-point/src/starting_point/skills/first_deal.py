@@ -40,7 +40,7 @@ class FirstDealSkill(BaseSkill):
     ) -> StepResult:
         return StepResult(next_step=True)
 
-    async def generate_output(self, state: UserState) -> dict:
+    async def generate_output(self, state: UserState) -> tuple[dict, dict]:
         phase2 = state.phase_results.get("2")
         product_card = phase2.data.get("product_card", {}) if phase2 else {}
         service_name = product_card.get("service_name", "")
@@ -48,7 +48,7 @@ class FirstDealSkill(BaseSkill):
         service_flow = "\n".join(product_card.get("service_flow", []))
 
         if self._llm is None:
-            return {"skill_type": "first_deal", "product_card": product_card}
+            return {"skill_type": "first_deal", "product_card": product_card}, {}
 
         prompt = self._prompt_builder.build_first_deal_prompt(
             service_name=service_name, pricing=pricing, service_flow=service_flow,
@@ -57,7 +57,7 @@ class FirstDealSkill(BaseSkill):
             messages=[{"role": "user", "content": prompt}],
             system="你是启点的首单教练。",
         )
-        return {"skill_type": "first_deal", "toolkit": _parse_json(raw)}
+        return {"skill_type": "first_deal", "toolkit": _parse_json(raw)}, {}
 
 
 def _parse_json(text: str) -> dict:

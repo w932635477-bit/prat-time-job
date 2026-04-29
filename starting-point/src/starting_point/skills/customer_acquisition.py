@@ -64,7 +64,7 @@ class CustomerAcquisitionSkill(BaseSkill):
     ) -> StepResult:
         return StepResult(next_step=True)
 
-    async def generate_output(self, state: UserState) -> dict:
+    async def generate_output(self, state: UserState) -> tuple[dict, dict]:
         platform_result = next(
             (r for r in state.step_results if r.step_id == "platform_choice"), None,
         )
@@ -83,7 +83,7 @@ class CustomerAcquisitionSkill(BaseSkill):
                 "platform": platform_name,
                 "platform_key": platform_key,
                 "remaining_weeks": WEEK_THEMES[1:],
-            }
+            }, {}
 
         week_info = WEEK_THEMES[0]
         prompt = self._prompt_builder.build_content_week_prompt(
@@ -104,7 +104,7 @@ class CustomerAcquisitionSkill(BaseSkill):
             "platform_key": platform_key,
             "week1_content": _parse_json(raw),
             "remaining_weeks": WEEK_THEMES[1:],
-        }
+        }, {}
 
 
 def _parse_json(text: str) -> dict:

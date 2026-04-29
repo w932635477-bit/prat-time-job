@@ -64,14 +64,15 @@ class AssessmentSkill(BaseSkill):
     ) -> StepResult:
         return StepResult(next_step=True)
 
-    async def generate_output(self, state: UserState) -> dict:
+    async def generate_output(self, state: UserState) -> tuple[dict, dict]:
         answers = {
             r.step_id: r.free_text or r.answer
             for r in state.step_results
         }
 
         if self._llm is None:
-            return {"skill_type": "assessment", "answers": answers}
+            output = {"skill_type": "assessment", "answers": answers}
+            return output, {}
 
         prompt = self._prompt_builder.build_assessment_strategy_prompt(
             digital_literacy=answers.get("digital_literacy", "basic"),
@@ -83,7 +84,20 @@ class AssessmentSkill(BaseSkill):
             messages=[{"role": "user", "content": prompt}],
             system="你是启点的用户评估顾问。",
         )
-        return {"skill_type": "assessment", "answers": answers, "strategy": _parse_json(raw)}
+        strategy = _parse_json(raw)
+        from starting_point.models import UserAssessment
+        assessment_updates = {
+            "digital_literacy": answers.get("digital_literacy", ""),
+            "mental_readiness": answers.get("mental_readiness", ""),
+            "time_commitment": answers.get("time_commitment", ""),
+            "financial_pressure": answers.get("financial_pressure", ""),
+            "profile_tag": strategy.get("profile_tag", ""),
+            "content_pace": strategy.get("content_pace", "normal"),
+            "first_milestone": strategy.get("first_milestone", ""),
+            "expectation_tone": strategy.get("expectation_tone", ""),
+        }
+        output = {"skill_type": "assessment", "answers": answers, "strategy": strategy}
+        return output, {"assessment": UserAssessment(**assessment_updates)}
 
 
 def _parse_json(text: str) -> dict:

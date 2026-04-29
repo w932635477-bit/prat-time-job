@@ -5,52 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>启点 — 陪你赚到第一块钱</title>
   <link rel="stylesheet" href="design-system.css">
-  <style>
-    .chat-area {
-      padding-top: calc(var(--header-height) + 2px + 32px + var(--sp-4));
-      padding-bottom: calc(var(--input-height) + var(--sp-3) + var(--safe-bottom) + var(--sp-3));
-      padding-left: var(--page-padding);
-      padding-right: var(--page-padding);
-      max-width: var(--max-width);
-      margin: 0 auto;
-    }
-
-    .chat-area__messages {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .chat-row {
-      margin-bottom: var(--sp-3);
-    }
-
-    .chat-row--ai {
-      display: flex;
-      justify-content: flex-start;
-    }
-
-    .chat-row--user {
-      display: flex;
-      justify-content: flex-end;
-    }
-
-    .chat-row--confidence {
-      display: flex;
-      justify-content: flex-start;
-    }
-
-    .chat-row--loading {
-      display: flex;
-      justify-content: flex-start;
-    }
-
-    .chat-row--options {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--sp-3);
-      padding-top: var(--sp-1);
-    }
-  </style>
 </head>
 <body>
   <!-- Header -->
@@ -70,7 +24,14 @@
 
   <!-- Chat Area -->
   <div class="chat-area">
-    <div id="chat-messages" class="chat-area__messages" role="log" aria-live="polite" aria-label="对话内容">
+    <div id="chat-messages" class="chat-area__messages" role="log" aria-label="对话内容">
+      <div id="welcome-skeleton" class="chat-row chat-row--ai fade-in">
+        <div class="bubble-ai">
+          <div style="margin-bottom:var(--sp-2);color:var(--text-secondary)">正在准备你的旅程...</div>
+          <div class="loading-dots"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+    </div>
     </div>
   </div>
 

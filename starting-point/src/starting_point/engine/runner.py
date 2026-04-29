@@ -64,7 +64,10 @@ class SkillRunner:
             return self._build_step_response(step, 0, skill.total_steps)
 
         if step is None:
-            output_data = await skill.generate_output(state)
+            output_data, state_updates = await skill.generate_output(state)
+            if state_updates:
+                state = state.model_copy(update=state_updates)
+                await self.state_manager.save_state(state)
             return ChatResponse(
                 message=ChatMessage(
                     role="assistant",
@@ -100,7 +103,9 @@ class SkillRunner:
         next_step = skill.get_step(state.current_step_index)
         if next_step is None:
             # Current skill completed — generate output, save phase result, advance
-            output_data = await skill.generate_output(state)
+            output_data, state_updates = await skill.generate_output(state)
+            if state_updates:
+                state = state.model_copy(update=state_updates)
 
             # Save to phase_results
             phase_key = str(skill.order)

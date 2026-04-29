@@ -4,12 +4,14 @@ import aiosqlite
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import HTTPException
 from fastapi.staticfiles import StaticFiles
 
+from starting_point.auth.middleware import get_user_from_request
 from starting_point.auth.routes import router as auth_router
 from starting_point.user.routes import router as user_router
 from starting_point.config import settings
@@ -64,10 +66,24 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["http://127.0.0.1:8000", "http://localhost:8000"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
+    allow_credentials=True,
 )
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(auth_router)
 app.include_router(payment_router)
@@ -75,15 +91,19 @@ app.include_router(user_router)
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest) -> ChatResponse:
+async def chat(req: ChatRequest, http_request: Request) -> ChatResponse:
+    user = await get_user_from_request(http_request)
     runner: SkillRunner = app.state.runner
     return await runner.process_message(
-        request.user_id, request.message, request.selected_option,
+        user.id, req.message, req.selected_option,
     )
 
 
 @app.post("/api/back/{user_id}/{step_id}", response_model=ChatResponse)
-async def go_back(user_id: str, step_id: str) -> ChatResponse:
+async def go_back(user_id: str, step_id: str, request: Request) -> ChatResponse:
+    user = await get_user_from_request(request)
+    if user.id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     runner: SkillRunner = app.state.runner
     try:
         return await runner.go_back(user_id, step_id)
@@ -92,7 +112,10 @@ async def go_back(user_id: str, step_id: str) -> ChatResponse:
 
 
 @app.get("/api/state/{user_id}")
-async def get_state(user_id: str):
+async def get_state(user_id: str, request: Request):
+    user = await get_user_from_request(request)
+    if user.id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     runner: SkillRunner = app.state.runner
     state = await runner.state_manager.load_state(user_id)
     if state is None:

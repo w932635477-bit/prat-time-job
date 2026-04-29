@@ -223,7 +223,7 @@
         const user = await userResp.json();
         renderProfile(user);
 
-        const ordersResp = await fetchWithAuth(`/api/payments/orders?user_id=${user.id}`);
+        const ordersResp = await fetchWithAuth('/api/payments/orders');
         if (ordersResp && ordersResp.ok) {
           const orders = await ordersResp.json();
           renderOrders(orders);
@@ -236,6 +236,12 @@
       document.getElementById('account-content').style.display = 'block';
     }
 
+    function esc(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
     function renderProfile(user) {
       const avatar = document.getElementById('acct-avatar');
       if (user.avatar_url) {
@@ -244,8 +250,12 @@
         avatar.style.display = 'none';
       }
       document.getElementById('acct-nickname').textContent = user.nickname || '未设置';
-      document.getElementById('acct-tier').innerHTML =
-        `<span class="tier-badge">${TIER_LABELS[user.tier] || user.tier}</span>`;
+      const tierBadge = document.createElement('span');
+      tierBadge.className = 'tier-badge';
+      tierBadge.textContent = TIER_LABELS[user.tier] || user.tier;
+      const tierEl = document.getElementById('acct-tier');
+      tierEl.textContent = '';
+      tierEl.appendChild(tierBadge);
 
       if (user.tier_expires_at) {
         document.getElementById('acct-expires-row').style.display = 'flex';
@@ -261,17 +271,33 @@
         list.innerHTML = '<div class="empty-state">暂无订单</div>';
         return;
       }
-      list.innerHTML = orders.map(o => `
-        <div class="order-item">
-          <div class="order-item__header">
-            <span class="order-item__tier">${TIER_LABELS[o.tier] || o.tier}</span>
-            <span class="order-item__status order-item__status--${o.status}">${
-              o.status === 'paid' ? '已支付' : o.status === 'pending' ? '待支付' : o.status
-            }</span>
-          </div>
-          <div class="order-item__detail">¥${(o.amount / 100).toFixed(1)} · ${o.created_at || ''}</div>
-        </div>
-      `).join('');
+      list.textContent = '';
+      orders.forEach(o => {
+        const item = document.createElement('div');
+        item.className = 'order-item';
+
+        const header = document.createElement('div');
+        header.className = 'order-item__header';
+
+        const tierSpan = document.createElement('span');
+        tierSpan.className = 'order-item__tier';
+        tierSpan.textContent = TIER_LABELS[o.tier] || o.tier;
+
+        const statusSpan = document.createElement('span');
+        statusSpan.className = `order-item__status order-item__status--${esc(o.status)}`;
+        statusSpan.textContent = o.status === 'paid' ? '已支付' : o.status === 'pending' ? '待支付' : o.status;
+
+        header.appendChild(tierSpan);
+        header.appendChild(statusSpan);
+
+        const detail = document.createElement('div');
+        detail.className = 'order-item__detail';
+        detail.textContent = `¥${(o.amount / 100).toFixed(1)} · ${o.created_at || ''}`;
+
+        item.appendChild(header);
+        item.appendChild(detail);
+        list.appendChild(item);
+      });
     }
 
     window.exportData = async function() {

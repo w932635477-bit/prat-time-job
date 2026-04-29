@@ -47,7 +47,7 @@ class TakeActionSkill(BaseSkill):
     ) -> StepResult:
         return StepResult(next_step=True)
 
-    async def generate_output(self, state: UserState) -> dict:
+    async def generate_output(self, state: UserState) -> tuple[dict, dict]:
         platform_result = next(
             (r for r in state.step_results if r.step_id == "platform"),
             None,
@@ -64,7 +64,7 @@ class TakeActionSkill(BaseSkill):
                 "skill_type": "take_action",
                 "platform": platform_name,
                 "status": "content_generated",
-            }
+            }, {}
 
         offer = state.selected_offer
         offer_str = (
@@ -96,14 +96,14 @@ class TakeActionSkill(BaseSkill):
                 "skill_type": "take_action",
                 "platform": platform_name,
                 "status": "content_generation_failed",
-            }
+            }, {}
 
         return {
             "skill_type": "take_action",
             "platform": platform_name,
             "content": content_data,
             "status": "content_generated",
-        }
+        }, {}
 
     def _parse_json(self, text: str) -> dict:
         start = text.find("{")

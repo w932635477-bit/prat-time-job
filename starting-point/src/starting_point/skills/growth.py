@@ -39,7 +39,7 @@ class GrowthSkill(BaseSkill):
     ) -> StepResult:
         return StepResult(next_step=True)
 
-    async def generate_output(self, state: UserState) -> dict:
+    async def generate_output(self, state: UserState) -> tuple[dict, dict]:
         phase2 = state.phase_results.get("2")
         product_card = phase2.data.get("product_card", {}) if phase2 else {}
         service_name = product_card.get("service_name", "")
@@ -56,7 +56,7 @@ class GrowthSkill(BaseSkill):
             channel = phase3.data.get("platform_key", channel)
 
         if self._llm is None:
-            return {"skill_type": "growth", "service_name": service_name}
+            return {"skill_type": "growth", "service_name": service_name}, {}
 
         prompt = self._prompt_builder.build_growth_prompt(
             service_name=service_name,
@@ -67,7 +67,7 @@ class GrowthSkill(BaseSkill):
             messages=[{"role": "user", "content": prompt}],
             system="你是启点的增长顾问。",
         )
-        return {"skill_type": "growth", "growth_plan": _parse_json(raw)}
+        return {"skill_type": "growth", "growth_plan": _parse_json(raw)}, {}
 
 
 def _parse_json(text: str) -> dict:

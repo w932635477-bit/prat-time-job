@@ -62,7 +62,7 @@ def _to_xml(params: dict) -> str:
 
 
 def _parse_xml(xml: str) -> dict:
-    import xml.etree.ElementTree as ET
+    import defusedxml.ElementTree as ET
     try:
         root = ET.fromstring(xml)
         return {child.tag: child.text or "" for child in root}
