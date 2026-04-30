@@ -211,7 +211,7 @@ class PromptBuilder:
   "repeat_purchase": "复购产品设计建议"
 }}"""
 
-    DAILY_TASKS_TEMPLATE = """你是启点的行动教练。为用户生成一个7天逐日行动计划，每天一个具体任务。
+    DAILY_TASKS_TEMPLATE = """你是启点的行动教练。为用户生成一个{suggested_days}天逐日行动计划，每天一个具体任务。
 
 平台：{platform}
 服务产品：{service_name}
@@ -222,7 +222,7 @@ class PromptBuilder:
 
 规则：
 - 每个任务30分钟内能完成
-- 第1-2天是"准备+发布"，不是"学习"
+- 前3天是"准备+发布"，不是"学习"
 - 任务必须引用用户的具体经验（来自asset_map）
 - 优先在选定平台操作
 - 避免需要花钱的步骤
@@ -233,6 +233,23 @@ class PromptBuilder:
   {{"day": 1, "task": "具体任务描述", "platform": "哪个平台", "estimated_time": "XX分钟", "why": "为什么今天做这个", "success_signal": "什么信号说明成功了"}},
   ...
 ]}}"""
+
+    STUCK_RESCUE_TEMPLATE = """你是启点的行动教练。用户在第{day}天的任务中卡住了，请给出具体、可操作的建议。
+
+当前任务：{task}
+平台：{platform}
+卡住的原因：{stuck_reason}
+已坚持天数：{completed_days}天
+
+规则：
+- 不要说"加油"，给具体步骤
+- 如果是技术问题，给工具名和操作步骤
+- 如果是心理问题，给降低门槛的替代方案
+- 建议必须能在15分钟内执行
+- 用大白话，不要术语
+
+输出JSON格式：
+{{"encouragement": "一句话认可用户的坚持", "diagnosis": "为什么卡住了（一句话）", "steps": ["具体步骤1", "具体步骤2", "具体步骤3"], "alternative": "如果还是不行，替代方案是什么", "next_action": "解决后继续做什么"}}"""
 
     def build_assessment_strategy_prompt(
         self, digital_literacy: str, mental_readiness: str,
@@ -280,11 +297,22 @@ class PromptBuilder:
     def build_daily_tasks_prompt(
         self, platform: str, service_name: str, asset_map: str,
         market_signals: str, digital_literacy: str, time_commitment: str,
+        suggested_days: int = 14,
     ) -> str:
         return self.DAILY_TASKS_TEMPLATE.format(
             platform=platform, service_name=service_name,
             asset_map=asset_map, market_signals=market_signals,
             digital_literacy=digital_literacy, time_commitment=time_commitment,
+            suggested_days=suggested_days,
+        )
+
+    def build_stuck_rescue_prompt(
+        self, day: int, task: str, platform: str,
+        stuck_reason: str, completed_days: int,
+    ) -> str:
+        return self.STUCK_RESCUE_TEMPLATE.format(
+            day=day, task=task, platform=platform,
+            stuck_reason=stuck_reason, completed_days=completed_days,
         )
 
     MARKET_RADAR_TEMPLATE = """你是启点的市场分析师。根据用户的行业和经验资产，分析这个经验在市场上的变现机会。

@@ -60,7 +60,7 @@ def test_daily_tasks_prompt_contains_key_fields():
         time_commitment="1-3h",
     )
     assert "小红书" in prompt
-    assert "7" in prompt
+    assert "14" in prompt
     assert "任务" in prompt or "task" in prompt.lower()
 
 
@@ -122,3 +122,34 @@ def test_user_state_has_task_plan_field():
     assert state.task_plan is None
     state2 = UserState(user_id="test", task_plan=TaskPlan(total_days=20))
     assert state2.task_plan.total_days == 20
+
+
+def test_stuck_rescue_prompt_contains_task_info():
+    from starting_point.llm.prompts import PromptBuilder
+    builder = PromptBuilder()
+    prompt = builder.build_stuck_rescue_prompt(
+        day=5,
+        task="在小红书发一篇装修避坑笔记",
+        platform="小红书",
+        stuck_reason="不知道怎么拍照，手机拍出来效果很差",
+        completed_days=4,
+    )
+    assert "小红书" in prompt
+    assert "装修避坑" in prompt
+    assert "拍照" in prompt
+    assert "建议" in prompt or "advice" in prompt.lower()
+
+
+def test_adaptive_daily_tasks_prompt_uses_suggested_days():
+    from starting_point.llm.prompts import PromptBuilder
+    builder = PromptBuilder()
+    prompt = builder.build_daily_tasks_prompt(
+        platform="小红书",
+        service_name="装修避坑咨询",
+        asset_map="瓷砖选购经验",
+        market_signals="有人主动咨询",
+        digital_literacy="intermediate",
+        time_commitment="1-3h",
+        suggested_days=20,
+    )
+    assert "20" in prompt
