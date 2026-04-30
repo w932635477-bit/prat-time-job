@@ -66,6 +66,13 @@ function renderOptions(options, onSelect) {
     btn.textContent = opt.label;
     btn.addEventListener('click', () => {
       if (busy) return;
+      if (opt.value === 'other') {
+        busy = true;
+        row.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+        btn.classList.add('option-btn--selected');
+        showOtherInput(row, onSelect);
+        return;
+      }
       busy = true;
       row.querySelectorAll('.option-btn').forEach(b => {
         b.classList.remove('option-btn--selected');
@@ -77,6 +84,45 @@ function renderOptions(options, onSelect) {
     row.appendChild(btn);
   });
   return row;
+}
+
+function showOtherInput(optionsRow, onSelect) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'other-input-wrapper fade-in';
+  wrapper.style.cssText = 'display:flex;gap:8px;margin-top:8px;padding:0 4px;';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = '请输入你的行业...';
+  input.className = 'other-input';
+  input.style.cssText = 'flex:1;padding:10px 14px;border:1px solid #e0e0e0;border-radius:10px;font-size:15px;outline:none;';
+  input.setAttribute('aria-label', '输入你的行业');
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.textContent = '确认';
+  confirmBtn.className = 'option-btn';
+  confirmBtn.style.cssText = 'min-width:60px;';
+  confirmBtn.addEventListener('click', () => {
+    const val = input.value.trim();
+    if (!val) {
+      input.style.borderColor = '#ff4444';
+      input.placeholder = '请先输入你的行业';
+      return;
+    }
+    confirmBtn.disabled = true;
+    input.disabled = true;
+    onSelect({ label: val, value: val });
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') confirmBtn.click();
+  });
+
+  wrapper.appendChild(input);
+  wrapper.appendChild(confirmBtn);
+  optionsRow.appendChild(wrapper);
+
+  input.focus();
 }
 
 function getMessagesContainer() {
