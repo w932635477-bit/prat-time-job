@@ -82,6 +82,8 @@ async def test_customer_acquisition_generates_daily_tasks():
     output, updates = await skill.generate_output(state)
     assert "tasks" in output
     assert len(output["tasks"]) >= 1
+    assert "task_plan" in updates
+    assert updates["task_plan"].total_days >= 1
 
 
 def test_market_radar_prompt_contains_industry():
@@ -153,3 +155,79 @@ def test_adaptive_daily_tasks_prompt_uses_suggested_days():
         suggested_days=20,
     )
     assert "20" in prompt
+
+
+def test_customer_acquisition_has_daily_checkin_step():
+    from starting_point.skills.customer_acquisition import CustomerAcquisitionSkill
+    skill = CustomerAcquisitionSkill()
+    step = skill.get_step(3)
+    assert step is not None
+    assert step.id == "daily_checkin"
+
+
+def test_customer_acquisition_total_steps_is_4():
+    from starting_point.skills.customer_acquisition import CustomerAcquisitionSkill
+    skill = CustomerAcquisitionSkill()
+    assert skill.total_steps == 4
+
+
+def test_process_checkin_done_updates_plan():
+    from starting_point.skills.customer_acquisition import CustomerAcquisitionSkill
+    from starting_point.models import UserState, TaskPlan, TaskDay
+    skill = CustomerAcquisitionSkill()
+    state = UserState(user_id="test")
+    state.task_plan = TaskPlan(
+        total_days=3,
+        current_day=1,
+        days=[
+            TaskDay(day=1, task="发帖", platform="小红书"),
+            TaskDay(day=2, task="回复", platform="小红书"),
+            TaskDay(day=3, task="优化", platform="小红书"),
+        ],
+        platform="小红书",
+    )
+    result = skill.process_answer("daily_checkin", "完成了", state)
+    assert result.next_step is False
+    assert result.deliverable is not None
+
+
+def test_process_checkin_stuck_returns_rescue_signal():
+    from starting_point.skills.customer_acquisition import CustomerAcquisitionSkill
+    from starting_point.models import UserState, TaskPlan, TaskDay
+    skill = CustomerAcquisitionSkill()
+    state = UserState(user_id="test")
+    state.task_plan = TaskPlan(
+        total_days=3,
+        current_day=1,
+        days=[TaskDay(day=1, task="发帖", platform="小红书")],
+        platform="小红书",
+    )
+    result = skill.process_answer("daily_checkin", "卡住了：不知道怎么拍照", state)
+    assert result.confidence_boost is not None
+    assert result.deliverable is not None
+    assert result.deliverable.get("stuck") is True
+
+
+def test_process_checkin_last_day_completes_plan():
+    from starting_point.skills.customer_acquisition import CustomerAcquisitionSkill
+    from starting_point.models import UserState, TaskPlan, TaskDay
+    skill = CustomerAcquisitionSkill()
+    state = UserState(user_id="test")
+    state.task_plan = TaskPlan(
+        total_days=1,
+        current_day=1,
+        days=[TaskDay(day=1, task="发帖", platform="小红书")],
+        platform="小红书",
+    )
+    result = skill.process_answer("daily_checkin", "完成了", state)
+    assert result.next_step is True
+    plan_update = result.deliverable["task_plan_update"]
+    assert plan_update["status"] == "completed"
+
+
+def test_calculate_suggested_days():
+    from starting_point.skills.customer_acquisition import CustomerAcquisitionSkill
+    skill = CustomerAcquisitionSkill()
+    assert skill._calculate_suggested_days("beginner", "1h") == 28
+    assert skill._calculate_suggested_days("advanced", "3-5h") == 14
+    assert skill._calculate_suggested_days("intermediate", "1-3h") == 14

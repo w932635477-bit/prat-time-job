@@ -20,7 +20,7 @@ PLATFORM_NAMES = {
 
 class CustomerAcquisitionSkill(BaseSkill):
     name = "找到客户"
-    description = "7天逐日任务，每天一步，帮你接到第一个咨询"
+    description = "逐日任务计划，每天一步，帮你接到第一个咨询"
     order = 3
 
     steps = [
@@ -46,7 +46,16 @@ class CustomerAcquisitionSkill(BaseSkill):
         ),
         Step(
             id="confirm_plan",
-            question="我帮你制定了7天行动计划。每天一个任务，30分钟内能完成。准备好了就开始吧！",
+            question="我帮你制定了行动计划。每天一个任务，30分钟内能完成。准备好了就开始吧！",
+        ),
+        Step(
+            id="daily_checkin",
+            question="今天的任务准备好了。",
+            options=[
+                StepOption(label="完成了", value="done"),
+                StepOption(label="卡住了，需要帮助", value="stuck"),
+            ],
+            allow_free_text=True,
         ),
     ]
 
@@ -57,7 +66,67 @@ class CustomerAcquisitionSkill(BaseSkill):
     def process_answer(
         self, step_id: str, answer: str, state: UserState,
     ) -> StepResult:
+        if step_id == "daily_checkin":
+            return self._process_checkin(answer, state)
         return StepResult(next_step=True)
+
+    def _process_checkin(self, answer: str, state: UserState) -> StepResult:
+        if state.task_plan is None or not state.task_plan.days:
+            return StepResult(next_step=True)
+
+        current_idx = state.task_plan.current_day - 1
+        if current_idx >= len(state.task_plan.days):
+            return StepResult(next_step=True)
+
+        current_task = state.task_plan.days[current_idx]
+
+        if "卡住" in answer or "stuck" in answer.lower():
+            stuck_reason = answer.replace("卡住了", "").replace("：", "").replace(":", "").strip()
+            if not stuck_reason:
+                stuck_reason = "用户未说明具体原因"
+            updated_day = current_task.model_copy(update={
+                "status": "stuck",
+                "stuck_reason": stuck_reason,
+            })
+            updated_days = list(state.task_plan.days)
+            updated_days[current_idx] = updated_day
+            updated_plan = state.task_plan.model_copy(update={"days": updated_days})
+
+            return StepResult(
+                next_step=False,
+                confidence_boost=f"卡住很正常，让我帮你分析一下「{stuck_reason}」这个问题。",
+                deliverable={"task_plan_update": updated_plan.model_dump(), "stuck": True},
+            )
+
+        # Mark as done
+        from datetime import datetime
+        updated_day = current_task.model_copy(update={
+            "status": "done",
+            "completed_at": datetime.now(),
+        })
+        updated_days = list(state.task_plan.days)
+        updated_days[current_idx] = updated_day
+        next_day = state.task_plan.current_day + 1
+        is_all_done = next_day > state.task_plan.total_days
+
+        updated_plan = state.task_plan.model_copy(update={
+            "days": updated_days,
+            "current_day": next_day,
+            "status": "completed" if is_all_done else "active",
+        })
+
+        if is_all_done:
+            return StepResult(
+                next_step=True,
+                confidence_boost="所有任务都完成了，你做到了！",
+                deliverable={"task_plan_update": updated_plan.model_dump()},
+            )
+
+        return StepResult(
+            next_step=False,
+            confidence_boost=f"第{current_task.day}天完成！明天继续。",
+            deliverable={"task_plan_update": updated_plan.model_dump()},
+        )
 
     async def generate_output(self, state: UserState) -> tuple[dict, dict]:
         platform_result = next(
@@ -90,11 +159,17 @@ class CustomerAcquisitionSkill(BaseSkill):
             digital_literacy = state.assessment.digital_literacy
             time_commitment = state.assessment.time_commitment
 
+        suggested_days = self._calculate_suggested_days(
+            digital_literacy or "intermediate",
+            time_commitment or "1-3h",
+        )
+
         if self._llm is None:
             return {
                 "skill_type": "customer_acquisition",
                 "platform": platform_name,
                 "tasks": [],
+                "suggested_days": suggested_days,
             }, {}
 
         prompt = self._prompt_builder.build_daily_tasks_prompt(
@@ -104,6 +179,7 @@ class CustomerAcquisitionSkill(BaseSkill):
             market_signals=market_signals_str or "暂无",
             digital_literacy=digital_literacy or "intermediate",
             time_commitment=time_commitment or "1-3h",
+            suggested_days=suggested_days,
         )
         try:
             raw = await self._llm.chat(
@@ -117,13 +193,69 @@ class CustomerAcquisitionSkill(BaseSkill):
                 "skill_type": "customer_acquisition",
                 "platform": platform_name,
                 "tasks": [],
+                "suggested_days": suggested_days,
             }, {}
+
+        from starting_point.models import TaskDay, TaskPlan
+        task_days = []
+        for t in task_data.get("tasks", []):
+            task_days.append(TaskDay(
+                day=t.get("day", len(task_days) + 1),
+                task=t.get("task", ""),
+                platform=t.get("platform", platform_name),
+                estimated_time=t.get("estimated_time", "30分钟"),
+                why=t.get("why", ""),
+                success_signal=t.get("success_signal", ""),
+            ))
+
+        total = len(task_days) if task_days else suggested_days
+        task_plan = TaskPlan(
+            total_days=total,
+            current_day=1,
+            days=task_days,
+            platform=platform_name,
+        )
 
         return {
             "skill_type": "customer_acquisition",
             "platform": platform_name,
             "tasks": task_data.get("tasks", []),
-        }, {}
+            "suggested_days": total,
+        }, {"task_plan": task_plan}
+
+    async def generate_rescue(
+        self, day: int, task: str, platform: str,
+        stuck_reason: str, completed_days: int,
+    ) -> dict | None:
+        if self._llm is None:
+            return None
+        prompt = self._prompt_builder.build_stuck_rescue_prompt(
+            day=day, task=task, platform=platform,
+            stuck_reason=stuck_reason, completed_days=completed_days,
+        )
+        try:
+            raw = await self._llm.chat(
+                messages=[{"role": "user", "content": prompt}],
+                system="你是启点的行动教练。",
+                temperature=0.5,
+                max_tokens=1024,
+            )
+            return _parse_json(raw)
+        except Exception:
+            logger.exception("LLM rescue generation failed")
+            return None
+
+    def _calculate_suggested_days(self, digital_literacy: str, time_commitment: str) -> int:
+        base = 14
+        if digital_literacy in ("beginner", "low", "新手"):
+            base = 21
+        elif digital_literacy in ("advanced", "high", "熟练"):
+            base = 14
+
+        if "1h" in time_commitment or "30" in time_commitment:
+            base = min(base + 7, 30)
+
+        return min(base, 30)
 
 
 def _parse_json(text: str) -> dict:
