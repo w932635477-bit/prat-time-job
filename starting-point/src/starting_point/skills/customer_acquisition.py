@@ -132,4 +132,5 @@ def _parse_json(text: str) -> dict:
         end = text.rindex("}") + 1
         return json.loads(text[start:end])
     except (ValueError, json.JSONDecodeError):
+        logger.warning("Failed to parse LLM JSON response: %s", text[:200])
         return {"raw": text}

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import Enum
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class SkillType(str, Enum):
@@ -58,6 +58,13 @@ class MarketSignals(BaseModel):
     search_intent: str = ""
     shared_pain_point: str = ""
     market_readiness: str = "medium"
+
+    @field_validator("market_readiness")
+    @classmethod
+    def clamp_readiness(cls, v: str) -> str:
+        if v not in ("high", "medium", "low"):
+            return "medium"
+        return v
 
 
 class DailyTask(BaseModel):

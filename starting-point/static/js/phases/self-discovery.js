@@ -52,9 +52,11 @@ function renderMarketRadar(radar) {
   const uniqueEdge = radar.unique_edge || '';
   const demandLevel = radar.demand_level || 'medium';
   const summary = radar.summary || '';
+  const validLevels = ['high', 'medium', 'low'];
+  const safeLevel = validLevels.includes(demandLevel) ? demandLevel : 'medium';
 
-  const demandLabel = { high: '高', medium: '中', low: '低' }[demandLevel] || '中';
-  const demandClass = `radar__badge--${demandLevel}`;
+  const demandLabel = { high: '高', medium: '中', low: '低' }[safeLevel] || '中';
+  const demandClass = `radar__badge--${safeLevel}`;
 
   return `
     <div class="radar-section">

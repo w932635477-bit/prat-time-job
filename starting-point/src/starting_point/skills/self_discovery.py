@@ -163,20 +163,18 @@ class SelfDiscoverySkill(BaseSkill):
             raw_stories=asset_data.get("raw_stories", []),
             market_signals=market_signals,
         )
-        market_radar = {}
-        if self._llm is not None:
-            industry_answer = ""
-            for sr in state.step_results:
-                if sr.step_id == "industry":
-                    industry_answer = sr.free_text or sr.answer
-                    break
-            asset_names = ", ".join(
-                c.get("name", "") for c in asset_data.get("capabilities", [])
-            )
-            ms_str = ""
-            raw_ms = asset_data.get("market_signals", {})
-            if raw_ms:
-                ms_str = raw_ms.get("demand_evidence", "")
+        market_radar = None
+        industry_answer = ""
+        for sr in state.step_results:
+            if sr.step_id == "industry":
+                industry_answer = sr.free_text or sr.answer
+                break
+        asset_names = ", ".join(
+            c.get("name", "") for c in asset_data.get("capabilities", [])
+        )
+        ms_str = ""
+        if raw_ms:
+            ms_str = raw_ms.get("demand_evidence", "")
             try:
                 radar_prompt = self._prompt_builder.build_market_radar_prompt(
                     industry=industry_answer,

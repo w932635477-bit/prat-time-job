@@ -77,7 +77,11 @@ async def test_generate_output_includes_market_signals_when_llm_returns_them():
     from starting_point.models import UserState, SkillStepResult
 
     llm = AsyncMock()
-    llm.chat.return_value = '{"capabilities": [], "resources": [], "confidence_level": "medium", "market_signals": {"demand_evidence": "有人问装修", "search_intent": "瓷砖选购", "shared_pain_point": "被坑", "market_readiness": "high"}}'
+    # First call: asset extraction. Second call: market radar.
+    llm.chat.side_effect = [
+        '{"capabilities": [], "resources": [], "confidence_level": "medium", "market_signals": {"demand_evidence": "有人问装修", "search_intent": "瓷砖选购", "shared_pain_point": "被坑", "market_readiness": "high"}}',
+        '{"existing_sellers": [], "price_range": "", "hot_topics": [], "unique_edge": "", "demand_level": "high", "summary": ""}',
+    ]
 
     skill = SelfDiscoverySkill(llm_client=llm)
     state = UserState(user_id="test")
