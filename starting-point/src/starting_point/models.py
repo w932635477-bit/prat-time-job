@@ -81,6 +81,27 @@ class DailyTaskPlan(BaseModel):
     platform: str = ""
 
 
+class TaskDay(BaseModel):
+    day: int
+    task: str
+    platform: str
+    estimated_time: str = "30分钟"
+    why: str = ""
+    success_signal: str = ""
+    status: str = "pending"          # pending | done | stuck | skipped
+    stuck_reason: str | None = None
+    rescue_advice: str | None = None
+    completed_at: datetime | None = None
+
+
+class TaskPlan(BaseModel):
+    total_days: int = 14
+    current_day: int = 1
+    days: list[TaskDay] = Field(default_factory=list)
+    platform: str = ""
+    status: str = "active"  # active | completed | abandoned
+
+
 class AssetMap(BaseModel):
     capabilities: list[CapabilityItem] = Field(default_factory=list)
     resources: list[str] = Field(default_factory=list)
@@ -163,6 +184,7 @@ class UserState(BaseModel):
     assessment: UserAssessment | None = None
     phase_results: dict[str, PhaseResult] = Field(default_factory=dict)
     content_plan: ContentPlan | None = None
+    task_plan: TaskPlan | None = None
 
 
 class ChatMessage(BaseModel):

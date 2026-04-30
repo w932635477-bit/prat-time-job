@@ -93,3 +93,32 @@ def test_market_radar_prompt_contains_industry():
     assert "建材" in prompt
     assert "闲鱼" in prompt
     assert "existing_sellers" in prompt
+
+
+def test_task_day_model_defaults():
+    from starting_point.models import TaskDay
+    td = TaskDay(day=1, task="发帖子", platform="小红书")
+    assert td.status == "pending"
+    assert td.stuck_reason is None
+    assert td.rescue_advice is None
+    assert td.estimated_time == "30分钟"
+
+
+def test_task_plan_model():
+    from starting_point.models import TaskPlan, TaskDay
+    plan = TaskPlan(
+        total_days=14,
+        current_day=1,
+        days=[TaskDay(day=1, task="测试", platform="小红书")],
+        platform="小红书",
+    )
+    assert plan.status == "active"
+    assert len(plan.days) == 1
+
+
+def test_user_state_has_task_plan_field():
+    from starting_point.models import UserState, TaskPlan
+    state = UserState(user_id="test")
+    assert state.task_plan is None
+    state2 = UserState(user_id="test", task_plan=TaskPlan(total_days=20))
+    assert state2.task_plan.total_days == 20
