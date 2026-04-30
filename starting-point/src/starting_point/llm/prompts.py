@@ -211,6 +211,29 @@ class PromptBuilder:
   "repeat_purchase": "复购产品设计建议"
 }}"""
 
+    DAILY_TASKS_TEMPLATE = """你是启点的行动教练。为用户生成一个7天逐日行动计划，每天一个具体任务。
+
+平台：{platform}
+服务产品：{service_name}
+用户的核心资产：{asset_map}
+市场信号：{market_signals}
+数字能力：{digital_literacy}
+每天可用时间：{time_commitment}
+
+规则：
+- 每个任务30分钟内能完成
+- 第1-2天是"准备+发布"，不是"学习"
+- 任务必须引用用户的具体经验（来自asset_map）
+- 优先在选定平台操作
+- 避免需要花钱的步骤
+- 用大白话写任务描述，不要术语
+
+输出JSON格式：
+{{"tasks": [
+  {{"day": 1, "task": "具体任务描述", "platform": "哪个平台", "estimated_time": "XX分钟", "why": "为什么今天做这个", "success_signal": "什么信号说明成功了"}},
+  ...
+]}}"""
+
     def build_assessment_strategy_prompt(
         self, digital_literacy: str, mental_readiness: str,
         time_commitment: str, financial_pressure: str,
@@ -252,4 +275,14 @@ class PromptBuilder:
         return self.GROWTH_TEMPLATE.format(
             service_name=service_name,
             first_deal_price=first_deal_price, channel=channel,
+        )
+
+    def build_daily_tasks_prompt(
+        self, platform: str, service_name: str, asset_map: str,
+        market_signals: str, digital_literacy: str, time_commitment: str,
+    ) -> str:
+        return self.DAILY_TASKS_TEMPLATE.format(
+            platform=platform, service_name=service_name,
+            asset_map=asset_map, market_signals=market_signals,
+            digital_literacy=digital_literacy, time_commitment=time_commitment,
         )

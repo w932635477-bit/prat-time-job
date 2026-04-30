@@ -65,3 +65,22 @@ def test_asset_map_market_signals_default_none():
     from starting_point.models import AssetMap
     am = AssetMap()
     assert am.market_signals is None
+
+
+def test_daily_task_creation():
+    from starting_point.models import DailyTask
+    task = DailyTask(
+        day=1, task="在闲鱼发一条咨询帖子", platform="闲鱼",
+        estimated_time="20分钟", why="你上次说的瓷砖经验正是业主需要的",
+        success_signal="有人来问",
+    )
+    assert task.day == 1
+    assert task.platform == "闲鱼"
+
+
+def test_daily_task_plan_creation():
+    from starting_point.models import DailyTask, DailyTaskPlan
+    tasks = [DailyTask(day=1, task="test", platform="x", estimated_time="10分钟", why="reason", success_signal="sig")]
+    plan = DailyTaskPlan(tasks=tasks, platform="小红书")
+    assert len(plan.tasks) == 1
+    assert plan.platform == "小红书"

@@ -1,125 +1,98 @@
 // starting-point/static/js/phases/customer-acquisition.js
-// Phase 3: 30-day Content Plan renderer
+// Phase 3: 7-Day Daily Task Cards renderer
 
 export function renderOutput(data) {
   const wrapper = document.createElement('div');
   wrapper.setAttribute('data-phase', '3');
 
-  const week1Content = data.week1_content || {};
-  const remainingWeeks = data.remaining_weeks || [
-    { week: 2, theme: '找感觉期', pieces: 7 },
-    { week: 3, theme: '突破期', pieces: 8 },
-    { week: 4, theme: '收获期', pieces: 8 },
-  ];
   const platform = data.platform || '小红书';
+  const tasks = data.tasks || [];
 
   // Title card
   const titleCard = document.createElement('div');
   titleCard.className = 'output-card fade-in';
   titleCard.innerHTML = `
-    <div class="output-card__title">30天内容计划</div>
-    <div class="output-card__subtitle">平台: ${esc(platform)} · 每周持续发布</div>
+    <div class="output-card__title">7天行动计划</div>
+    <div class="output-card__subtitle">平台: ${esc(platform)} · 每天30分钟内</div>
   `;
   wrapper.appendChild(titleCard);
 
-  // Week 1: open by default with content
-  const week1 = renderWeekAccordion(
-    1,
-    week1Content.theme || '试水期',
-    week1Content.content_pieces || [],
-    true,
-    week1Content.emotional_support || '',
-  );
-  wrapper.appendChild(week1);
+  // Task cards
+  if (tasks.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'output-card fade-in';
+    empty.innerHTML = '<div class="output-card__value">任务生成中，请稍后刷新</div>';
+    wrapper.appendChild(empty);
+    return wrapper;
+  }
 
-  // Weeks 2-4: collapsed placeholders
-  remainingWeeks.forEach(w => {
-    wrapper.appendChild(renderWeekPlaceholder(w.week, w.theme, w.pieces));
+  tasks.forEach(task => {
+    wrapper.appendChild(renderTaskCard(task));
   });
 
   return wrapper;
 }
 
-function renderWeekAccordion(weekNum, theme, pieces, isOpen, emotionalSupport) {
-  const details = document.createElement('details');
-  details.className = 'content-week fade-in';
-  if (isOpen) details.open = true;
+function renderTaskCard(task) {
+  const card = document.createElement('div');
+  card.className = 'task-card fade-in';
 
-  const summary = document.createElement('summary');
-  summary.textContent = `第${weekNum}周: ${theme} (${pieces.length}条)`;
-  details.appendChild(summary);
+  const dayLabel = task.day === 1 ? '今天' : `第${task.day}天`;
+  const checked = isTaskCompleted(task.day);
 
-  const body = document.createElement('div');
-  body.className = 'content-week__body';
+  card.innerHTML = `
+    <div class="task-card__header">
+      <label class="task-card__checkbox">
+        <input type="checkbox" data-day="${task.day}" ${checked ? 'checked' : ''} />
+        <span class="task-card__day">${esc(dayLabel)}</span>
+      </label>
+      <span class="task-card__time">${esc(task.estimated_time || '30分钟')}</span>
+    </div>
+    <div class="task-card__task">${esc(task.task)}</div>
+    <div class="task-card__meta">
+      <span class="task-card__platform">${esc(task.platform)}</span>
+    </div>
+    <div class="task-card__why">${esc(task.why)}</div>
+    <div class="task-card__signal">成功信号: ${esc(task.success_signal)}</div>
+  `;
 
-  if (emotionalSupport) {
-    const support = document.createElement('div');
-    support.className = 'emotional-support';
-    support.textContent = emotionalSupport;
-    body.appendChild(support);
-  }
-
-  pieces.forEach(piece => {
-    body.appendChild(renderContentPiece(piece));
+  const checkbox = card.querySelector('input[type="checkbox"]');
+  checkbox.addEventListener('change', () => {
+    toggleTaskCompleted(task.day);
+    if (checkbox.checked) {
+      card.classList.add('task-card--done');
+    } else {
+      card.classList.remove('task-card--done');
+    }
   });
 
-  details.appendChild(body);
-  return details;
-}
-
-function renderWeekPlaceholder(weekNum, theme, piecesCount) {
-  const details = document.createElement('details');
-  details.className = 'content-week fade-in';
-
-  const summary = document.createElement('summary');
-  summary.textContent = `第${weekNum}周: ${theme} (${piecesCount}条) — 点击生成`;
-  details.appendChild(summary);
-
-  const body = document.createElement('div');
-  body.className = 'content-week__body';
-  body.innerHTML = `<div class="output-card__value" style="text-align:center;padding:var(--sp-6);color:var(--text-tertiary)">完成第${weekNum - 1}周后自动生成</div>`;
-  details.appendChild(body);
-
-  return details;
-}
-
-function renderContentPiece(piece) {
-  const details = document.createElement('details');
-  details.className = 'content-piece';
-
-  const day = piece.day || '';
-  const type = piece.type || '';
-  const title = piece.title || '内容';
-
-  const summary = document.createElement('summary');
-  summary.textContent = `Day ${day} · ${type} · ${title}`;
-  details.appendChild(summary);
-
-  if (piece.script) {
-    const scriptDiv = document.createElement('div');
-    scriptDiv.className = 'content-piece__script';
-    scriptDiv.textContent = piece.script;
-    details.appendChild(scriptDiv);
+  if (checked) {
+    card.classList.add('task-card--done');
   }
 
-  if (piece.tags && piece.tags.length > 0) {
-    const tagsDiv = document.createElement('div');
-    tagsDiv.className = 'content-piece__tags';
-    piece.tags.forEach(tag => {
-      const span = document.createElement('span');
-      span.className = 'content-piece__tag';
-      span.textContent = `#${tag}`;
-      tagsDiv.appendChild(span);
-    });
-    details.appendChild(tagsDiv);
-  }
+  return card;
+}
 
-  return details;
+const STORAGE_KEY = 'starting_point_completed_tasks';
+
+function isTaskCompleted(day) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    return !!saved[day];
+  } catch { return false; }
+}
+
+function toggleTaskCompleted(day) {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch {}
+  saved[day] = !saved[day];
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
 }
 
 export function getSummary(data) {
-  const platform = data.platform || '';
-  return `30天${platform}内容计划已生成`;
+  const tasks = data.tasks || [];
+  const done = tasks.filter(t => isTaskCompleted(t.day)).length;
+  return `7天行动计划 (${done}/${tasks.length} 完成)`;
 }
 
 function esc(str) {

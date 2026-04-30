@@ -60,6 +60,20 @@ class MarketSignals(BaseModel):
     market_readiness: str = "medium"
 
 
+class DailyTask(BaseModel):
+    day: int
+    task: str
+    platform: str
+    estimated_time: str = "30分钟"
+    why: str = ""
+    success_signal: str = ""
+
+
+class DailyTaskPlan(BaseModel):
+    tasks: list[DailyTask] = Field(default_factory=list)
+    platform: str = ""
+
+
 class AssetMap(BaseModel):
     capabilities: list[CapabilityItem] = Field(default_factory=list)
     resources: list[str] = Field(default_factory=list)

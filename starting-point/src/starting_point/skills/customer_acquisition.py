@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import logging
 
 from starting_point.engine.skill_base import BaseSkill, StepResult
 from starting_point.llm.client import DeepSeekClient
 from starting_point.llm.prompts import PromptBuilder
 from starting_point.models import Step, StepOption, UserState
 
+logger = logging.getLogger(__name__)
 
 PLATFORM_NAMES = {
     "douyin": "抖音",
@@ -15,17 +17,10 @@ PLATFORM_NAMES = {
     "auto": "小红书（推荐新手）",
 }
 
-WEEK_THEMES = [
-    {"week": 1, "theme": "试水期", "pieces": 7},
-    {"week": 2, "theme": "找感觉期", "pieces": 7},
-    {"week": 3, "theme": "突破期", "pieces": 8},
-    {"week": 4, "theme": "收获期", "pieces": 8},
-]
-
 
 class CustomerAcquisitionSkill(BaseSkill):
     name = "找到客户"
-    description = "30天内容计划，帮你获得第一个咨询"
+    description = "7天逐日任务，每天一步，帮你接到第一个咨询"
     order = 3
 
     steps = [
@@ -51,7 +46,7 @@ class CustomerAcquisitionSkill(BaseSkill):
         ),
         Step(
             id="confirm_plan",
-            question="我帮你制定了一个30天内容计划。第一周的内容已经准备好了，你可以先看看。准备好了就开始吧！",
+            question="我帮你制定了7天行动计划。每天一个任务，30分钟内能完成。准备好了就开始吧！",
         ),
     ]
 
@@ -73,37 +68,61 @@ class CustomerAcquisitionSkill(BaseSkill):
 
         phase2_result = state.phase_results.get("2")
         service_name = ""
+        asset_map_str = ""
+        market_signals_str = ""
         if phase2_result:
             card = phase2_result.data.get("product_card", {})
             service_name = card.get("service_name", "")
+            asset_map_str = json.dumps(
+                phase2_result.data.get("asset_map", {}), ensure_ascii=False,
+            )
+
+        phase1_result = state.phase_results.get("1")
+        if phase1_result:
+            am = phase1_result.data.get("asset_map", {})
+            ms = am.get("market_signals", {})
+            if ms:
+                market_signals_str = json.dumps(ms, ensure_ascii=False)
+
+        digital_literacy = ""
+        time_commitment = ""
+        if state.assessment:
+            digital_literacy = state.assessment.digital_literacy
+            time_commitment = state.assessment.time_commitment
 
         if self._llm is None:
             return {
                 "skill_type": "customer_acquisition",
                 "platform": platform_name,
-                "platform_key": platform_key,
-                "remaining_weeks": WEEK_THEMES[1:],
+                "tasks": [],
             }, {}
 
-        week_info = WEEK_THEMES[0]
-        prompt = self._prompt_builder.build_content_week_prompt(
-            week=week_info["week"],
-            theme=week_info["theme"],
-            industry="未知",
+        prompt = self._prompt_builder.build_daily_tasks_prompt(
             platform=platform_name,
-            service_name=service_name,
-            pieces=week_info["pieces"],
+            service_name=service_name or "咨询服务",
+            asset_map=asset_map_str or "用户行业经验",
+            market_signals=market_signals_str or "暂无",
+            digital_literacy=digital_literacy or "intermediate",
+            time_commitment=time_commitment or "1-3h",
         )
-        raw = await self._llm.chat(
-            messages=[{"role": "user", "content": prompt}],
-            system="你是启点的内容策划师。",
-        )
+        try:
+            raw = await self._llm.chat(
+                messages=[{"role": "user", "content": prompt}],
+                system="你是启点的行动教练。",
+            )
+            task_data = _parse_json(raw)
+        except Exception:
+            logger.exception("LLM daily tasks generation failed")
+            return {
+                "skill_type": "customer_acquisition",
+                "platform": platform_name,
+                "tasks": [],
+            }, {}
+
         return {
             "skill_type": "customer_acquisition",
             "platform": platform_name,
-            "platform_key": platform_key,
-            "week1_content": _parse_json(raw),
-            "remaining_weeks": WEEK_THEMES[1:],
+            "tasks": task_data.get("tasks", []),
         }, {}
 
 

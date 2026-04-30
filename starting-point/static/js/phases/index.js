@@ -3,7 +3,7 @@
 
 export const PHASES = [
   { id: 'assessment',           name: '起跑评估', steps: 4 },
-  { id: 'self_discovery',       name: '发现金矿', steps: 8 },
+  { id: 'self_discovery',       name: '发现金矿', steps: 11 },
   { id: 'product_packaging',    name: '包装产品', steps: 4 },
   { id: 'customer_acquisition', name: '找到客户', steps: 3 },
   { id: 'first_deal',           name: '完成首单', steps: 2 },
