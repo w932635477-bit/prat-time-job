@@ -23,7 +23,7 @@ CONFIDENCE_BOOST_TEMPLATE = """基于用户刚才的回答："{user_answer}"
 - 证据类型：{evidence_type}
 """
 
-EXTRACTION_TEMPLATE = """从以下对话中提取用户的可变现资产。
+EXTRACTION_TEMPLATE = """从以下对话中提取用户的可变现资产和市场信号。
 
 用户回答：
 {answers}
@@ -32,9 +32,14 @@ EXTRACTION_TEMPLATE = """从以下对话中提取用户的可变现资产。
 1. 可变现的知识点（具体的，不是泛泛的"有经验"）
 2. 可用资源（渠道、人脉、报价信息等）
 3. 信心评估（基于回答的具体程度和积极性）
+4. 市场信号（基于 content_search、organic_inquiry、shared_pain 的回答）：
+   - demand_evidence：有没有人已经在找这种帮助？（来自 organic_inquiry）
+   - search_intent：用户自己搜什么？（来自 content_search）
+   - shared_pain_point：行业共性痛点是什么？（来自 shared_pain）
+   - market_readiness：综合判断，市场是否已经准备好为这个经验付费（high/medium/low）
 
 输出为JSON格式：
-{{"capabilities": [{{"name": "...", "description": "...", "evidence": "...", "estimated_value": "..."}}], "resources": ["..."], "confidence_level": "low|medium|high"}}
+{{"capabilities": [{{"name": "...", "description": "...", "evidence": "...", "estimated_value": "..."}}], "resources": ["..."], "confidence_level": "low|medium|high", "market_signals": {{"demand_evidence": "...", "search_intent": "...", "shared_pain_point": "...", "market_readiness": "high|medium|low"}}}}
 """
 
 OFFER_GENERATION_TEMPLATE = """基于用户的资产清单和约束条件，生成变现方案。

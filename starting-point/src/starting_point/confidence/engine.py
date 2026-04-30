@@ -14,7 +14,8 @@ class ConfidenceEngine:
         has_specific_number = any(c.isdigit() for c in answer)
         has_detail = any(
             kw in answer
-            for kw in ["帮", "省", "避", "解决", "客户", "项目", "经历"]
+            for kw in ["帮", "省", "避", "解决", "客户", "项目", "经历",
+                       "问", "找我", "搜", "咨询", "坑", "被坑", "骗"]
         )
         if has_specific_number and has_detail:
             return ConfidenceLevel.HIGH

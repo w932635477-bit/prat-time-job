@@ -46,3 +46,22 @@ def test_confidence_level_values():
     assert ConfidenceLevel.LOW == "low"
     assert ConfidenceLevel.MEDIUM == "medium"
     assert ConfidenceLevel.HIGH == "high"
+
+
+def test_asset_map_has_market_signals_field():
+    from starting_point.models import AssetMap, MarketSignals
+    signals = MarketSignals(
+        demand_evidence="有人咨询",
+        search_intent="装修避坑",
+        shared_pain_point="瓷砖被坑",
+        market_readiness="high",
+    )
+    am = AssetMap(market_signals=signals)
+    assert am.market_signals.demand_evidence == "有人咨询"
+    assert am.market_signals.market_readiness == "high"
+
+
+def test_asset_map_market_signals_default_none():
+    from starting_point.models import AssetMap
+    am = AssetMap()
+    assert am.market_signals is None

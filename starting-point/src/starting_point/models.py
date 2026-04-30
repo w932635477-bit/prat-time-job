@@ -53,11 +53,19 @@ class CapabilityItem(BaseModel):
     estimated_value: str | None = None
 
 
+class MarketSignals(BaseModel):
+    demand_evidence: str = ""
+    search_intent: str = ""
+    shared_pain_point: str = ""
+    market_readiness: str = "medium"
+
+
 class AssetMap(BaseModel):
     capabilities: list[CapabilityItem] = Field(default_factory=list)
     resources: list[str] = Field(default_factory=list)
     confidence_level: ConfidenceLevel = ConfidenceLevel.MEDIUM
     raw_stories: list[str] = Field(default_factory=list)
+    market_signals: MarketSignals | None = None
 
 
 class OfferItem(BaseModel):

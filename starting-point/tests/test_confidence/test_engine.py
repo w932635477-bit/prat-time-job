@@ -37,3 +37,19 @@ def test_build_empathetic_response():
     )
     assert "12年" in response
     assert "不是因为你不行" in response
+
+
+def test_demand_signal_answer_scores_high():
+    engine = ConfidenceEngine()
+    level = engine.assess_from_answer(
+        "上个月有3个人问我瓷砖怎么选，我帮他们避开了800块的溢价"
+    )
+    assert level == ConfidenceLevel.HIGH
+
+
+def test_search_intent_answer_scores_medium():
+    engine = ConfidenceEngine()
+    level = engine.assess_from_answer(
+        "我在小红书上搜过瓷砖选购攻略"
+    )
+    assert level in (ConfidenceLevel.MEDIUM, ConfidenceLevel.HIGH)

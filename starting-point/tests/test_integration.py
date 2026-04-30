@@ -69,3 +69,40 @@ async def test_full_chat_flow(client, auth_headers):
 async def test_get_state(client, auth_headers):
     resp = await client.get("/api/state/int-test-user", headers=auth_headers)
     assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_full_self_discovery_with_market_signals(tmp_path):
+    """Regression test: 11 steps complete and advance to next skill."""
+    from starting_point.models import SkillType
+
+    db_path = tmp_path / "test.db"
+    registry = create_registry()
+    state_mgr = StateManager(db_path)
+    await state_mgr.initialize()
+    runner = SkillRunner(registry, state_mgr, None)
+
+    # Complete assessment (4 steps)
+    await runner.process_message("u1", "hi", None)
+    for answer in ["basic", "ready", "1-3h", "moderate"]:
+        await runner.process_message("u1", answer, None)
+
+    # Complete self_discovery (11 steps)
+    for step_id in [
+        "industry",
+        "proud_moment",
+        "save_money_story",
+        "insider_knowledge",
+        "people_ask_me",
+        "price_judgment",
+        "unique_resources",
+        "first_100",
+        "content_search",
+        "organic_inquiry",
+        "shared_pain",
+    ]:
+        await runner.process_message("u1", f"test answer for {step_id}", None)
+
+    # After self_discovery completes, should advance to next skill
+    state = await state_mgr.load_state("u1")
+    assert state.current_skill != SkillType.SELF_DISCOVERY

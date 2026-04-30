@@ -58,6 +58,22 @@ class SelfDiscoverySkill(BaseSkill):
             id="first_100",
             question="如果明天让你只靠经验赚到第一笔100元，你最可能卖什么帮助？",
         ),
+        Step(
+            id="content_search",
+            question="你在抖音或小红书上搜过自己行业的什么内容？",
+            allow_free_text=True,
+        ),
+        Step(
+            id="organic_inquiry",
+            question="最近有没有人主动找你帮忙或咨询？因为什么事？",
+            allow_free_text=True,
+        ),
+        Step(
+            id="shared_pain",
+            question="你觉得你行业里什么最坑？你朋友也这么觉得吗？",
+            allow_free_text=True,
+            confidence_boost_template="evidence_replay",
+        ),
     ]
 
     def __init__(self, llm_client: DeepSeekClient | None = None) -> None:
@@ -122,7 +138,7 @@ class SelfDiscoverySkill(BaseSkill):
             }
             return output, {}
 
-        from starting_point.models import AssetMap, CapabilityItem, ConfidenceLevel
+        from starting_point.models import AssetMap, CapabilityItem, ConfidenceLevel, MarketSignals
         capabilities = [
             CapabilityItem(
                 name=c.get("name", ""),
@@ -133,11 +149,19 @@ class SelfDiscoverySkill(BaseSkill):
             for c in asset_data.get("capabilities", [])
         ]
         conf_str = asset_data.get("confidence_level", "medium")
+        raw_ms = asset_data.get("market_signals", {})
+        market_signals = MarketSignals(
+            demand_evidence=raw_ms.get("demand_evidence", ""),
+            search_intent=raw_ms.get("search_intent", ""),
+            shared_pain_point=raw_ms.get("shared_pain_point", ""),
+            market_readiness=raw_ms.get("market_readiness", "medium"),
+        ) if raw_ms else None
         asset_map = AssetMap(
             capabilities=capabilities,
             resources=asset_data.get("resources", []),
             confidence_level=ConfidenceLevel(conf_str) if conf_str in ("low", "medium", "high") else ConfidenceLevel.MEDIUM,
             raw_stories=asset_data.get("raw_stories", []),
+            market_signals=market_signals,
         )
         output = {
             "skill_type": "self_discovery",
