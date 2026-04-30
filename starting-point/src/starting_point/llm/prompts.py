@@ -286,3 +286,32 @@ class PromptBuilder:
             asset_map=asset_map, market_signals=market_signals,
             digital_literacy=digital_literacy, time_commitment=time_commitment,
         )
+
+    MARKET_RADAR_TEMPLATE = """你是启点的市场分析师。根据用户的行业和经验资产，分析这个经验在市场上的变现机会。
+
+行业：{industry}
+核心资产：{assets}
+市场信号：{market_signals}
+
+请分析以下内容（基于你对中国互联网平台的了解）：
+
+1. 在闲鱼、小红书、抖音上，有没有人在卖类似的服务或内容？他们是怎么包装的？
+2. 这些服务通常怎么定价？
+3. 哪些内容话题在这个行业有热度？
+4. 这个用户的经验相比市面上的有什么独特优势？
+
+规则：
+- 用具体的平台案例说话，不要泛泛而谈
+- 如果不确定某个平台有没有，就说不确定，不要编造
+- 定价给区间，不给精确数字
+- 独特优势要引用用户的具体资产
+
+输出JSON格式：
+{{"existing_sellers": ["卖家1的描述", "卖家2的描述"], "price_range": "XX-XX元", "hot_topics": ["话题1", "话题2", "话题3"], "unique_edge": "一句话说清楚用户的优势", "demand_level": "high|medium|low", "summary": "一句话总结市场机会"}}"""
+
+    def build_market_radar_prompt(
+        self, industry: str, assets: str, market_signals: str,
+    ) -> str:
+        return self.MARKET_RADAR_TEMPLATE.format(
+            industry=industry, assets=assets, market_signals=market_signals,
+        )

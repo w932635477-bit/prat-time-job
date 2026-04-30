@@ -82,3 +82,14 @@ async def test_customer_acquisition_generates_daily_tasks():
     output, updates = await skill.generate_output(state)
     assert "tasks" in output
     assert len(output["tasks"]) >= 1
+
+
+def test_market_radar_prompt_contains_industry():
+    from starting_point.llm.prompts import PromptBuilder
+    builder = PromptBuilder()
+    prompt = builder.build_market_radar_prompt(
+        industry="建材", assets="瓷砖选购经验", market_signals="有人主动咨询",
+    )
+    assert "建材" in prompt
+    assert "闲鱼" in prompt
+    assert "existing_sellers" in prompt

@@ -88,3 +88,26 @@ async def test_generate_output_includes_market_signals_when_llm_returns_them():
     assert updates["asset_map"].market_signals is not None
     assert updates["asset_map"].market_signals.demand_evidence == "有人问装修"
     assert updates["asset_map"].market_signals.market_readiness == "high"
+
+
+@pytest.mark.asyncio
+async def test_generate_output_includes_market_radar():
+    from unittest.mock import AsyncMock
+    from starting_point.models import UserState, SkillStepResult
+
+    llm = AsyncMock()
+    # First call: asset extraction. Second call: market radar.
+    llm.chat.side_effect = [
+        '{"capabilities": [{"name": "瓷砖选购", "description": "帮客户选砖", "evidence": "20年经验", "estimated_value": "50-200元/次"}], "resources": ["渠道"], "confidence_level": "high", "market_signals": {"demand_evidence": "有人问", "search_intent": "瓷砖", "shared_pain_point": "被坑", "market_readiness": "high"}}',
+        '{"existing_sellers": ["闲鱼上有人卖装修咨询"], "price_range": "50-300元", "hot_topics": ["装修避坑", "建材选购"], "unique_edge": "20年实战经验", "demand_level": "high", "summary": "建材咨询市场需求旺盛"}',
+    ]
+
+    skill = SelfDiscoverySkill(llm_client=llm)
+    state = UserState(user_id="test")
+    for step_id in ["industry", "proud_moment", "save_money_story", "insider_knowledge", "people_ask_me", "price_judgment", "unique_resources", "first_100", "content_search", "organic_inquiry", "shared_pain"]:
+        state.step_results.append(SkillStepResult(step_id=step_id, answer=f"answer for {step_id}"))
+
+    output, updates = await skill.generate_output(state)
+    assert "market_radar" in output
+    assert len(output["market_radar"].get("existing_sellers", [])) > 0
+    assert llm.chat.call_count == 2

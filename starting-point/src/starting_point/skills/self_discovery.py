@@ -163,10 +163,40 @@ class SelfDiscoverySkill(BaseSkill):
             raw_stories=asset_data.get("raw_stories", []),
             market_signals=market_signals,
         )
+        market_radar = {}
+        if self._llm is not None:
+            industry_answer = ""
+            for sr in state.step_results:
+                if sr.step_id == "industry":
+                    industry_answer = sr.free_text or sr.answer
+                    break
+            asset_names = ", ".join(
+                c.get("name", "") for c in asset_data.get("capabilities", [])
+            )
+            ms_str = ""
+            raw_ms = asset_data.get("market_signals", {})
+            if raw_ms:
+                ms_str = raw_ms.get("demand_evidence", "")
+            try:
+                radar_prompt = self._prompt_builder.build_market_radar_prompt(
+                    industry=industry_answer,
+                    assets=asset_names or "用户行业经验",
+                    market_signals=ms_str or "暂无",
+                )
+                radar_raw = await self._llm.chat(
+                    messages=[{"role": "user", "content": radar_prompt}],
+                    temperature=0.3,
+                    max_tokens=1024,
+                )
+                market_radar = self._parse_json(radar_raw)
+            except Exception:
+                logger.exception("Market radar LLM call failed")
+
         output = {
             "skill_type": "self_discovery",
             "answers": answers,
             "asset_map": asset_data,
+            "market_radar": market_radar,
             "total_steps_completed": len(state.step_results),
         }
         return output, {"asset_map": asset_map}
