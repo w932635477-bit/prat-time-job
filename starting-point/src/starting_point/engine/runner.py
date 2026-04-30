@@ -94,6 +94,22 @@ class SkillRunner:
         state.step_results.append(result_record)
 
         result = skill.process_answer(step.id, message, state)
+
+        # Apply state updates from deliverable (e.g., task_plan_update)
+        if result.deliverable and "task_plan_update" in result.deliverable:
+            from starting_point.models import TaskPlan
+            updated_plan = TaskPlan(**result.deliverable["task_plan_update"])
+            state = state.model_copy(update={"task_plan": updated_plan})
+
+        # Handle stuck rescue via LLM
+        if result.deliverable and result.deliverable.get("stuck"):
+            rescue_result = await self._handle_stuck_rescue(skill, state)
+            if rescue_result:
+                result = StepResult(
+                    next_step=False,
+                    confidence_boost=rescue_result,
+                )
+
         if result.next_step:
             state.current_step_index += 1
             state.completed_steps.append(step.id)
@@ -215,6 +231,35 @@ class SkillRunner:
             if s.id == target_step:
                 return skill, i
         return None, None
+
+    async def _handle_stuck_rescue(self, skill, state) -> str | None:
+        if not hasattr(skill, "generate_rescue"):
+            return None
+        if state.task_plan is None:
+            return None
+        current_idx = state.task_plan.current_day - 1
+        if current_idx >= len(state.task_plan.days):
+            return None
+        task = state.task_plan.days[current_idx]
+        rescue_data = await skill.generate_rescue(
+            day=task.day,
+            task=task.task,
+            platform=task.platform,
+            stuck_reason=task.stuck_reason or "未说明原因",
+            completed_days=current_idx,
+        )
+        if rescue_data is None:
+            return None
+        parts = []
+        if rescue_data.get("encouragement"):
+            parts.append(rescue_data["encouragement"])
+        if rescue_data.get("diagnosis"):
+            parts.append(f"分析：{rescue_data['diagnosis']}")
+        for i, s in enumerate(rescue_data.get("steps", []), 1):
+            parts.append(f"{i}. {s}")
+        if rescue_data.get("alternative"):
+            parts.append(f"替代方案：{rescue_data['alternative']}")
+        return "\n".join(parts)
 
     def _build_step_response(
         self,
