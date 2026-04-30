@@ -1,3 +1,4 @@
+import json
 import pytest
 
 from starting_point.skills.plan_path import PlanPathSkill
@@ -231,3 +232,65 @@ def test_calculate_suggested_days():
     assert skill._calculate_suggested_days("beginner", "1h") == 28
     assert skill._calculate_suggested_days("advanced", "3-5h") == 14
     assert skill._calculate_suggested_days("intermediate", "1-3h") == 14
+
+
+@pytest.mark.asyncio
+async def test_customer_acquisition_generates_adaptive_plan():
+    from unittest.mock import AsyncMock
+    from starting_point.skills.customer_acquisition import CustomerAcquisitionSkill
+    from starting_point.models import UserState, SkillStepResult
+
+    llm = AsyncMock()
+    tasks = [{"day": i, "task": f"任务{i}", "platform": "小红书", "estimated_time": "30分钟", "why": "原因", "success_signal": "信号"} for i in range(1, 15)]
+    llm.chat.return_value = json.dumps({"tasks": tasks})
+
+    skill = CustomerAcquisitionSkill(llm_client=llm)
+    state = UserState(user_id="test")
+    state.step_results.append(SkillStepResult(step_id="platform_choice", answer="xiaohongshu", selected_option="xiaohongshu"))
+    state.step_results.append(SkillStepResult(step_id="content_readiness", answer="never"))
+    state.step_results.append(SkillStepResult(step_id="confirm_plan", answer="ok"))
+
+    output, updates = await skill.generate_output(state)
+    assert "tasks" in output
+    assert output["suggested_days"] == 14
+    assert "task_plan" in updates
+    assert updates["task_plan"].total_days == 14
+    assert len(updates["task_plan"].days) == 14
+
+
+@pytest.mark.asyncio
+async def test_customer_acquisition_beginner_gets_more_days():
+    from unittest.mock import AsyncMock
+    from starting_point.skills.customer_acquisition import CustomerAcquisitionSkill
+    from starting_point.models import UserState, UserAssessment, SkillStepResult
+
+    llm = AsyncMock()
+    tasks = [{"day": i, "task": f"任务{i}", "platform": "小红书", "estimated_time": "30分钟", "why": "原因", "success_signal": "信号"} for i in range(1, 22)]
+    llm.chat.return_value = json.dumps({"tasks": tasks})
+
+    skill = CustomerAcquisitionSkill(llm_client=llm)
+    state = UserState(user_id="test", assessment=UserAssessment(digital_literacy="beginner", time_commitment="1h"))
+    state.step_results.append(SkillStepResult(step_id="platform_choice", answer="xiaohongshu"))
+    state.step_results.append(SkillStepResult(step_id="content_readiness", answer="never"))
+    state.step_results.append(SkillStepResult(step_id="confirm_plan", answer="ok"))
+
+    output, updates = await skill.generate_output(state)
+    assert output["suggested_days"] >= 21
+
+
+@pytest.mark.asyncio
+async def test_rescue_generates_advice():
+    from unittest.mock import AsyncMock
+    from starting_point.skills.customer_acquisition import CustomerAcquisitionSkill
+
+    llm = AsyncMock()
+    llm.chat.return_value = '{"encouragement": "坚持到了第3天很棒", "diagnosis": "拍照技巧不够", "steps": ["用自然光", "拍3张选最好的"], "alternative": "先发文字笔记", "next_action": "完成后继续第4天"}'
+
+    skill = CustomerAcquisitionSkill(llm_client=llm)
+    result = await skill.generate_rescue(
+        day=3, task="在小红书发一篇装修避坑笔记", platform="小红书",
+        stuck_reason="不知道怎么拍照", completed_days=2,
+    )
+    assert result is not None
+    assert len(result.get("steps", [])) > 0
+    assert result.get("diagnosis") is not None
