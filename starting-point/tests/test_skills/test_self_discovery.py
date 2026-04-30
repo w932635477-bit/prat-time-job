@@ -16,6 +16,15 @@ def test_first_step_is_industry():
     assert len(step.options) > 0
 
 
+def test_industry_step_has_other_option():
+    skill = SelfDiscoverySkill()
+    step = skill.get_step(0)
+    values = [o.value for o in step.options]
+    assert "other" in values
+    other = next(o for o in step.options if o.value == "other")
+    assert "其他" in other.label or "手动" in other.label
+
+
 def test_process_answer_returns_next_step():
     skill = SelfDiscoverySkill()
     state = UserState(user_id="test")

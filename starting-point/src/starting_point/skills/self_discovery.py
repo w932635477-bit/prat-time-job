@@ -27,6 +27,7 @@ class SelfDiscoverySkill(BaseSkill):
                 StepOption(label="零售/电商", value="retail"),
                 StepOption(label="制造业", value="manufacturing"),
                 StepOption(label="物流/运输", value="logistics"),
+                StepOption(label="其他（手动输入）", value="other"),
             ],
         ),
         Step(
