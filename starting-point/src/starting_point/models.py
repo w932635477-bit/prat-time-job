@@ -209,6 +209,7 @@ class ChatResponse(BaseModel):
     skill_completed: bool = False
     output: dict | None = None
     current_step: int | None = None
+    task_plan: TaskPlan | None = None
 
 
 class User(BaseModel):

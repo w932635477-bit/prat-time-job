@@ -246,7 +246,7 @@ async function handleOptionSelect(opt) {
   }
 }
 
-function handleResponse(response) {
+async function handleResponse(response) {
   if (response.paywall) {
     renderPaywall(response.preview_data || {}, response.tiers || []);
     return;
@@ -259,12 +259,33 @@ function handleResponse(response) {
     messages.appendChild(renderBubbleAi(content));
     state = store.appendHistory(state, 'ai', content);
 
+    // Render checkin card when on daily_checkin step
+    if (response.message.step_id === 'daily_checkin' && state.taskPlan) {
+      const plan = state.taskPlan;
+      const currentIdx = plan.current_day - 1;
+      if (currentIdx < plan.days.length) {
+        const renderer = await getRenderer('customer-acquisition');
+        const checkinCard = renderer.renderCheckinCard(
+          plan.days[currentIdx],
+          plan.current_day,
+          plan.total_days,
+        );
+        messages.appendChild(checkinCard);
+      }
+    }
+
     if (response.message.options && response.message.options.length > 0) {
       const opts = response.message.options.map(o => ({ label: o.label, value: o.value }));
       messages.appendChild(renderOptions(opts, async (o) => {
         await handleOptionSelect(o);
       }));
     }
+  }
+
+  // Sync task_plan from server response into state
+  if (response.task_plan) {
+    state = { ...state, taskPlan: response.task_plan };
+    store.save(state);
   }
 
   if (response.current_step !== undefined) {

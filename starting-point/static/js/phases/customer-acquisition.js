@@ -1,5 +1,5 @@
 // starting-point/static/js/phases/customer-acquisition.js
-// Phase 3: 7-Day Daily Task Cards renderer
+// Phase 3: Adaptive Task Plan with daily check-in
 
 export function renderOutput(data) {
   const wrapper = document.createElement('div');
@@ -7,17 +7,16 @@ export function renderOutput(data) {
 
   const platform = data.platform || '小红书';
   const tasks = data.tasks || [];
+  const suggestedDays = data.suggested_days || 14;
 
-  // Title card
   const titleCard = document.createElement('div');
   titleCard.className = 'output-card fade-in';
   titleCard.innerHTML = `
-    <div class="output-card__title">7天行动计划</div>
+    <div class="output-card__title">${suggestedDays}天行动计划</div>
     <div class="output-card__subtitle">平台: ${esc(platform)} · 每天30分钟内</div>
   `;
   wrapper.appendChild(titleCard);
 
-  // Task cards
   if (tasks.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'output-card fade-in';
@@ -91,8 +90,44 @@ function toggleTaskCompleted(day) {
 
 export function getSummary(data) {
   const tasks = data.tasks || [];
+  const suggestedDays = data.suggested_days || 14;
   const done = tasks.filter(t => isTaskCompleted(t.day)).length;
-  return `7天行动计划 (${done}/${tasks.length} 完成)`;
+  return `${suggestedDays}天行动计划 (${done}/${tasks.length} 完成)`;
+}
+
+export function renderCheckinCard(taskDay, currentDay, totalDays) {
+  const card = document.createElement('div');
+  card.className = 'checkin-card fade-in';
+
+  const progressPct = Math.round((currentDay / totalDays) * 100);
+
+  card.innerHTML = `
+    <div class="checkin-card__progress">
+      <div class="checkin-card__progress-bar">
+        <div class="checkin-card__progress-fill" style="width:${progressPct}%"></div>
+      </div>
+      <span class="checkin-card__progress-text">第${currentDay}/${totalDays}天</span>
+    </div>
+    <div class="checkin-card__task-title">${esc(taskDay.task)}</div>
+    <div class="checkin-card__meta">
+      <span class="checkin-card__platform">${esc(taskDay.platform)}</span>
+      <span class="checkin-card__time">${esc(taskDay.estimated_time || '30分钟')}</span>
+    </div>
+    <div class="checkin-card__why">${esc(taskDay.why)}</div>
+    <div class="checkin-card__signal">成功信号: ${esc(taskDay.success_signal)}</div>
+  `;
+
+  return card;
+}
+
+export function renderRescueAdvice(advice) {
+  const card = document.createElement('div');
+  card.className = 'rescue-card fade-in';
+  card.innerHTML = `
+    <div class="rescue-card__title">帮你分析一下</div>
+    <div class="rescue-card__advice">${esc(advice)}</div>
+  `;
+  return card;
 }
 
 function esc(str) {

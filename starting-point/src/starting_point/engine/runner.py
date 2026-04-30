@@ -117,6 +117,13 @@ class SkillRunner:
         await self.state_manager.save_state(state)
 
         next_step = skill.get_step(state.current_step_index)
+
+        # Generate task_plan when entering daily_checkin step for the first time
+        if next_step and next_step.id == "daily_checkin" and state.task_plan is None:
+            output_data, state_updates = await skill.generate_output(state)
+            if state_updates:
+                state = state.model_copy(update=state_updates)
+                await self.state_manager.save_state(state)
         if next_step is None:
             # Current skill completed — generate output, save phase result, advance
             output_data, state_updates = await skill.generate_output(state)
@@ -181,10 +188,14 @@ class SkillRunner:
             )
 
         progress = state.current_step_index / skill.total_steps
-        return self._build_step_response(
+        resp = self._build_step_response(
             next_step, state.current_step_index, skill.total_steps,
             result.confidence_boost,
         )
+        # Include task_plan in response when on or entering daily_checkin step
+        if state.task_plan and next_step and next_step.id == "daily_checkin":
+            resp = resp.model_copy(update={"task_plan": state.task_plan})
+        return resp
 
     async def go_back(
         self, user_id: str, target_step: str,
