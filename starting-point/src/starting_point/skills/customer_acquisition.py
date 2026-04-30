@@ -165,12 +165,19 @@ class CustomerAcquisitionSkill(BaseSkill):
         )
 
         if self._llm is None:
+            from starting_point.models import TaskDay, TaskPlan
+            fallback_days = [
+                TaskDay(day=1, task=f"在{platform_name}注册账号，完善个人资料", platform=platform_name, why="先让客户能找到你", success_signal="账号上线"),
+                TaskDay(day=2, task=f"在{platform_name}发第一篇内容，分享你的行业经验", platform=platform_name, why="让内容替你说话", success_signal="发布成功"),
+                TaskDay(day=3, task="回复至少3个同行业内容的评论", platform=platform_name, why="混个脸熟", success_signal="有人注意到你"),
+            ]
+            task_plan = TaskPlan(total_days=len(fallback_days), current_day=1, days=fallback_days, platform=platform_name)
             return {
                 "skill_type": "customer_acquisition",
                 "platform": platform_name,
-                "tasks": [],
-                "suggested_days": suggested_days,
-            }, {}
+                "tasks": [d.model_dump() for d in fallback_days],
+                "suggested_days": len(fallback_days),
+            }, {"task_plan": task_plan}
 
         prompt = self._prompt_builder.build_daily_tasks_prompt(
             platform=platform_name,

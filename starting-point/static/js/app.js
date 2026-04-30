@@ -254,14 +254,20 @@ async function handleResponse(response) {
 
   const messages = getMessagesContainer();
 
+  // Sync task_plan from server response into state BEFORE rendering
+  if (response.task_plan) {
+    state = { ...state, taskPlan: response.task_plan };
+    store.save(state);
+  }
+
   if (response.message) {
     const content = response.message.content || response.message.question || '';
     messages.appendChild(renderBubbleAi(content));
     state = store.appendHistory(state, 'ai', content);
 
     // Render checkin card when on daily_checkin step
-    if (response.message.step_id === 'daily_checkin' && state.taskPlan) {
-      const plan = state.taskPlan;
+    const plan = response.task_plan || state.taskPlan;
+    if (response.message.step_id === 'daily_checkin' && plan) {
       const currentIdx = plan.current_day - 1;
       if (currentIdx < plan.days.length) {
         const renderer = await getRenderer('customer-acquisition');
@@ -274,18 +280,18 @@ async function handleResponse(response) {
       }
     }
 
+    // Render rescue advice if present
+    if (response.message.confidence_boost && response.message.step_id === 'daily_checkin') {
+      const renderer = await getRenderer('customer-acquisition');
+      messages.appendChild(renderer.renderRescueAdvice(response.message.confidence_boost));
+    }
+
     if (response.message.options && response.message.options.length > 0) {
       const opts = response.message.options.map(o => ({ label: o.label, value: o.value }));
       messages.appendChild(renderOptions(opts, async (o) => {
         await handleOptionSelect(o);
       }));
     }
-  }
-
-  // Sync task_plan from server response into state
-  if (response.task_plan) {
-    state = { ...state, taskPlan: response.task_plan };
-    store.save(state);
   }
 
   if (response.current_step !== undefined) {

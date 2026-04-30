@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from starting_point.engine.registry import SkillRegistry
+from starting_point.engine.skill_base import StepResult
 from starting_point.engine.state import StateManager
 from starting_point.models import (
     ChatMessage, ChatResponse, SkillType, UserState, SkillOutput,
@@ -124,6 +125,12 @@ class SkillRunner:
             if state_updates:
                 state = state.model_copy(update=state_updates)
                 await self.state_manager.save_state(state)
+            # If still no plan, skip daily_checkin and complete the phase
+            if state.task_plan is None or not state.task_plan.days:
+                state.current_step_index += 1
+                state.completed_steps.append("daily_checkin")
+                await self.state_manager.save_state(state)
+                next_step = skill.get_step(state.current_step_index)
         if next_step is None:
             # Current skill completed — generate output, save phase result, advance
             output_data, state_updates = await skill.generate_output(state)
