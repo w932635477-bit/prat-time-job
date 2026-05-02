@@ -1,21 +1,38 @@
 from __future__ import annotations
 
+import json
+import re
+import logging
+from typing import TypeVar
+
 import httpx
+from pydantic import BaseModel, ValidationError
+
 from starting_point.config import settings
 
+logger = logging.getLogger(__name__)
 
-class DeepSeekClient:
-    """DeepSeek V4 client using Anthropic-compatible Messages API via EvoLink."""
+T = TypeVar("T", bound=BaseModel)
+
+MAX_JSON_RETRIES = 3
+
+
+class LLMClient:
+    """DeepSeek client using Anthropic-compatible Messages API via EvoLink."""
 
     def __init__(
         self,
         api_key: str | None = None,
         base_url: str | None = None,
         model: str | None = None,
-    ):
+    ) -> None:
         self._api_key = api_key or settings.deepseek_api_key
         self._base_url = base_url or settings.deepseek_base_url
         self._model = model or settings.deepseek_model
+        self._http_client = httpx.AsyncClient(timeout=120.0)
+
+    async def close(self) -> None:
+        await self._http_client.aclose()
 
     async def chat(
         self,
@@ -24,76 +41,79 @@ class DeepSeekClient:
         temperature: float = 0.7,
         max_tokens: int = 4096,
     ) -> str:
-        headers = {
-            "Authorization": f"Bearer {self._api_key}",
-            "Content-Type": "application/json",
-        }
-        payload: dict = {
-            "model": self._model,
-            "max_tokens": max_tokens,
-            "messages": messages,
-            "temperature": temperature,
-        }
-        if system:
-            payload["system"] = system
-        if settings.deepseek_thinking:
-            payload["thinking"] = {"type": "enabled"}
+        payload = self._build_payload(messages, system, temperature, max_tokens)
+        response = await self._http_client.post(
+            f"{self._base_url}/v1/messages",
+            headers=self._headers(),
+            json=payload,
+        )
+        response.raise_for_status()
+        return self._extract_text(response.json())
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{self._base_url}/v1/messages",
-                headers=headers,
-                json=payload,
-                timeout=120.0,
-            )
-            response.raise_for_status()
-            data = response.json()
-
-        # Extract text from Anthropic-style content blocks
-        text_parts = []
-        for block in data.get("content", []):
-            if block.get("type") == "text":
-                text_parts.append(block.get("text", ""))
-        return "\n".join(text_parts)
-
-    async def chat_with_thinking(
+    async def chat_json(
         self,
         messages: list[dict],
+        schema: type[T],
         system: str | None = None,
         temperature: float = 0.7,
-        max_tokens: int = 8192,
-    ) -> tuple[str, str]:
-        """Returns (thinking, text) from the response."""
-        headers = {
+        max_tokens: int = 4096,
+    ) -> dict:
+        """Chat with JSON extraction + Pydantic validation + retry."""
+        for attempt in range(MAX_JSON_RETRIES):
+            text = await self.chat(messages, system, temperature, max_tokens)
+            parsed = self._extract_json(text)
+            if parsed is not None:
+                return parsed
+            logger.warning(
+                "LLM JSON parse failed (attempt %d/%d)",
+                attempt + 1,
+                MAX_JSON_RETRIES,
+            )
+        raise ValueError(
+            f"Failed to extract valid JSON after {MAX_JSON_RETRIES} attempts"
+        )
+
+    def _headers(self) -> dict:
+        return {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
         }
+
+    def _build_payload(
+        self,
+        messages: list[dict],
+        system: str | None,
+        temperature: float,
+        max_tokens: int,
+    ) -> dict:
         payload: dict = {
             "model": self._model,
             "max_tokens": max_tokens,
             "messages": messages,
             "temperature": temperature,
-            "thinking": {"type": "enabled"},
         }
         if system:
             payload["system"] = system
+        return payload
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{self._base_url}/v1/messages",
-                headers=headers,
-                json=payload,
-                timeout=120.0,
-            )
-            response.raise_for_status()
-            data = response.json()
-
-        thinking_text = ""
-        response_text = ""
+    @staticmethod
+    def _extract_text(data: dict) -> str:
+        parts = []
         for block in data.get("content", []):
-            if block.get("type") == "thinking":
-                thinking_text = block.get("thinking", "")
-            elif block.get("type") == "text":
-                response_text = block.get("text", "")
+            if block.get("type") == "text":
+                parts.append(block.get("text", ""))
+        return "\n".join(parts)
 
-        return thinking_text, response_text
+    @staticmethod
+    def _extract_json(text: str) -> dict | None:
+        """Extract JSON from text -- handles ```json blocks and raw JSON."""
+        json_block = re.search(r"```json\s*\n(.*?)\n```", text, re.DOTALL)
+        if json_block:
+            try:
+                return json.loads(json_block.group(1))
+            except json.JSONDecodeError:
+                pass
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            return None
