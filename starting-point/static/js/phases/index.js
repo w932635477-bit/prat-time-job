@@ -6,8 +6,8 @@ export const PHASES = [
   { id: 'self_discovery',       name: '发现金矿', steps: 11 },
   { id: 'product_packaging',    name: '包装产品', steps: 4 },
   { id: 'customer_acquisition', name: '找到客户', steps: 4 },
-  { id: 'first_deal',           name: '完成首单', steps: 2 },
-  { id: 'growth',               name: '转起来',   steps: 2 },
+  { id: 'first_deal',           name: '完成首单', steps: 5 },
+  { id: 'growth',               name: '转起来',   steps: 5 },
 ];
 
 export function getPhase(index) {

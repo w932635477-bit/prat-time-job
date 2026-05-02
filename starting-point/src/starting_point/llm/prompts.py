@@ -176,39 +176,97 @@ class PromptBuilder:
   "next_week_hint": "下周方向建议"
 }}"""
 
-    FIRST_DEAL_TEMPLATE = """你是启点的首单教练。根据用户的服务产品，生成完成首单所需的所有工具。
+    FIRST_DEAL_TEMPLATE = """你是启点的首单教练。根据用户的服务产品和当前情况，生成完成首单所需的所有工具。
 
 服务产品：{service_name}
 定价：{pricing}
 服务流程：{service_flow}
+客户现状：{customer_status}（inquiry=有人问、price_asked=有人问价、wants_consultation=想约咨询、no_customer_yet=还没客户）
+价格心理：{pricing_concern}（dont_know=不知道报多少、fear_too_high=怕报贵、fear_too_low=怕报低、uncomfortable=不好意思收钱）
+收款方式：{payment_comfort}
+交付准备：{delivery_readiness}（ready=准备好了、roughly=大概知道、not_ready=没想过）
+
+规则：
+- 话术必须像真人在微信聊天，不要像客服话术
+- 如果客户还没来，生成"第一个客户来了你怎么回复"的模拟场景
+- 报价公式要给出具体数字范围，不要只说"根据市场定价"
+- 如果用户不好意思收钱，话术中要包含"把价格说成帮别人省的钱"的技巧
+- 交付清单要有时间估计，让用户知道每步要多久
+- 收款方式如果选了"不知道"，默认推荐微信转账，给出操作步骤
+- 所有内容要引用用户的服务名称和行业背景
 
 请以JSON格式返回：
 {{
+  "scenario": "当前场景描述（1句话）",
   "communication_templates": {{
+    "first_response": "客户第一次私信时的回复（2-3句话，像微信聊天）",
     "price_inquiry": "客户问价时的回复话术",
-    "service_inquiry": "客户问服务时的回复话术",
-    "hesitant_client": "客户犹豫时的回复话术"
+    "service_inquiry": "客户问服务内容时的回复话术",
+    "hesitant_client": "客户犹豫时的回复话术",
+    "closing_line": "引导客户下单的最后一句话"
   }},
-  "pricing_formula": "具体报价公式",
+  "pricing_formula": {{
+    "formula": "具体报价公式（含数字）",
+    "example": "举例：如果客户问XX，你就说XX元",
+    "floor_price": "最低价（低于这个不要接）",
+    "psychological_anchor": "报价时的心理锚定技巧"
+  }},
   "payment_methods": [
-    {{"method": "方式名", "how": "怎么操作", "tip": "注意事项"}}
+    {{"method": "方式名", "how": "怎么操作（具体步骤）", "tip": "注意事项", "when_to_collect": "什么时候收款"}}
   ],
-  "delivery_checklist": ["交付步骤1", "交付步骤2"],
-  "post_delivery": "交付后引导客户反馈的话术"
+  "delivery_checklist": [
+    {{"step": "交付步骤", "estimated_time": "预计时间", "tip": "注意点"}}
+  ],
+  "post_delivery": {{
+    "thank_you_message": "交付后的感谢话术",
+    "review_request": "请客户给好评的话术（自然不尴尬）",
+    "next_step_hint": "引导客户复购或推荐的话术"
+  }},
+  "first_deal_price": 建议的首单价格（整数，元）
 }}"""
 
-    GROWTH_TEMPLATE = """你是启点的增长顾问。用户刚完成了首单，需要指导下一步。
+    GROWTH_TEMPLATE = """你是启点的增长顾问。用户刚经历了首单（或尝试了首单），需要指导下一步。
 
 服务产品：{service_name}
-首单价格：{first_deal_price}元
+首单结果：{deal_result}（completed_happy=完成且满意、completed_bumpy=完成但波折、lost=客户跑了、in_progress=还在沟通中）
+用户说的详情：{deal_details}
+之前的首单价格：{first_deal_price}元
 获客渠道：{channel}
+
+规则：
+- 如果客户跑了，先分析原因（一句话），再给下一步行动
+- 如果客户满意，重点放在涨价和转介绍
+- 如果还在沟通，给"今天做什么"的具体行动，不要未来计划
+- 转介绍方案要具体到说什么话、发给谁、什么时候发
+- 涨价建议要给出具体数字和时间点
+- 好评转内容要给出可以直接发的内容模板
+- 所有内容引用用户的具体服务名称
 
 请以JSON格式返回：
 {{
-  "testimonial_to_content": "把客户好评变成内容的方法",
-  "pricing_adjustment": "什么时候涨价、涨多少的具体建议",
-  "referral_mechanism": "转介绍的具体方案",
-  "repeat_purchase": "复购产品设计建议"
+  "deal_review": "对这次首单的一句话评价（真诚，不灌鸡汤）",
+  "next_action_today": "今天要做的第一件事（具体、可执行）",
+  "testimonial_to_content": {{
+    "approach": "把好评/经验变成内容的方法（2句话）",
+    "content_template": "可以直接发布的内容模板（含标题+正文）",
+    "when_to_post": "什么时候发效果最好"
+  }},
+  "pricing_adjustment": {{
+    "current_price": "当前价格",
+    "suggested_price": "建议新价格",
+    "when_to_raise": "满足什么条件时涨价",
+    "how_to_communicate": "跟客户怎么说涨价的事"
+  }},
+  "referral_mechanism": {{
+    "script": "请客户推荐的具体话术",
+    "incentive": "给推荐人的好处（可以是非物质的）",
+    "timing": "什么时候开口要推荐"
+  }},
+  "repeat_purchase": {{
+    "product_idea": "复购产品建议",
+    "pitch": "跟老客户推销复购的话术",
+    "pricing": "复购价格建议"
+  }}
 }}"""
 
     DAILY_TASKS_TEMPLATE = """你是启点的行动教练。为用户生成一个{suggested_days}天逐日行动计划，每天一个具体任务。
@@ -280,18 +338,30 @@ class PromptBuilder:
 
     def build_first_deal_prompt(
         self, service_name: str, pricing: str, service_flow: str,
+        customer_status: str = "no_customer_yet",
+        pricing_concern: str = "dont_know",
+        payment_comfort: str = "unsure",
+        delivery_readiness: str = "not_ready",
     ) -> str:
         return self.FIRST_DEAL_TEMPLATE.format(
             service_name=service_name, pricing=pricing,
             service_flow=service_flow,
+            customer_status=customer_status,
+            pricing_concern=pricing_concern,
+            payment_comfort=payment_comfort,
+            delivery_readiness=delivery_readiness,
         )
 
     def build_growth_prompt(
         self, service_name: str, first_deal_price: int, channel: str,
+        deal_result: str = "in_progress",
+        deal_details: str = "",
     ) -> str:
         return self.GROWTH_TEMPLATE.format(
             service_name=service_name,
             first_deal_price=first_deal_price, channel=channel,
+            deal_result=deal_result,
+            deal_details=deal_details,
         )
 
     def build_daily_tasks_prompt(
