@@ -1,0 +1,334 @@
+/*
+ * Starting Point v4.0 — Chat UI additions
+ * Supplements design-system.css with v4-specific styles.
+ * Keeps everything minimal — reuse design-system classes first.
+ */
+
+/* ---- View transitions ---- */
+
+.view { display: none; }
+.view--active { display: block; }
+
+/* ---- Landing (overrides for v4 minimal landing) ---- */
+
+.landing-v4 {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--sp-10) var(--page-padding);
+  padding-bottom: calc(var(--sp-10) + var(--safe-bottom));
+}
+
+.landing-v4__icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--sp-10);
+  opacity: 0;
+  animation: fadeIn 600ms ease-out 100ms forwards;
+}
+
+.landing-v4__icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.landing-v4__name {
+  font: var(--t-hero);
+  letter-spacing: var(--tracking-hero);
+  color: var(--text-primary);
+  margin-bottom: var(--sp-3);
+  opacity: 0;
+  animation: fadeIn 400ms ease-out 200ms forwards;
+}
+
+.landing-v4__tagline {
+  font: var(--t-body-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-12);
+  opacity: 0;
+  animation: fadeIn 300ms ease-out 400ms forwards;
+}
+
+.landing-v4__cta {
+  width: 100%;
+  max-width: 320px;
+  opacity: 0;
+  animation: fadeIn 300ms ease-out 500ms forwards;
+}
+
+/* ---- Chat view ---- */
+
+.chat-v4 {
+  min-height: 100dvh;
+}
+
+.chat-v4__messages {
+  padding: var(--sp-4) var(--page-padding);
+  padding-top: calc(var(--header-height) + var(--sp-4));
+  padding-bottom: calc(var(--input-height) + var(--sp-3) + var(--safe-bottom) + var(--sp-3));
+  max-width: var(--max-width);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Stage transition animation ---- */
+
+.stage-transition {
+  text-align: center;
+  padding: var(--sp-6) var(--sp-4);
+  margin: var(--sp-4) 0;
+  animation: fadeIn var(--transition-normal) ease-out;
+}
+
+.stage-transition__label {
+  font: var(--t-caption);
+  color: var(--gold);
+  letter-spacing: 0.15em;
+  margin-bottom: var(--sp-2);
+}
+
+.stage-transition__title {
+  font: var(--t-title);
+  color: var(--text-primary);
+  margin-bottom: var(--sp-3);
+}
+
+.stage-transition__desc {
+  font: var(--t-body-sm);
+  color: var(--text-secondary);
+}
+
+/* ---- Knowledge point cards (Stage 0 result) ---- */
+
+.kp-card {
+  background: var(--bg-secondary);
+  border-radius: var(--r-lg);
+  padding: var(--sp-5);
+  margin: var(--sp-3) 0;
+  border-left: 3px solid var(--gold);
+}
+
+.kp-card__type {
+  display: inline-block;
+  background: var(--gold-subtle);
+  color: var(--gold);
+  font: var(--t-micro);
+  padding: 2px var(--sp-3);
+  border-radius: var(--r-pill);
+  margin-bottom: var(--sp-2);
+}
+
+.kp-card__desc {
+  font: var(--t-body-sm);
+  color: var(--text-primary);
+  margin-bottom: var(--sp-3);
+  line-height: 1.6;
+}
+
+.kp-card__meta {
+  font: var(--t-caption);
+  color: var(--text-secondary);
+}
+
+.kp-card__meta strong {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* ---- Kit view ---- */
+
+.kit-view {
+  min-height: 100dvh;
+  padding-top: var(--header-height);
+}
+
+.kit-view__content {
+  padding: var(--sp-6) var(--page-padding);
+  padding-bottom: calc(var(--sp-8) + var(--safe-bottom));
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.kit-view__intro {
+  text-align: center;
+  margin-bottom: var(--sp-8);
+}
+
+.kit-view__label {
+  font: var(--t-caption);
+  color: var(--gold);
+  letter-spacing: 0.15em;
+  margin-bottom: var(--sp-2);
+}
+
+.kit-view__heading {
+  font: var(--t-hero);
+  color: var(--text-primary);
+  margin-bottom: var(--sp-3);
+}
+
+.kit-view__desc {
+  font: var(--t-body-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ---- Platform recommendation cards ---- */
+
+.platform-card {
+  background: var(--bg-secondary);
+  border-radius: var(--r-lg);
+  padding: var(--sp-5);
+  margin-bottom: var(--sp-4);
+  border: 1px solid var(--border);
+}
+
+.platform-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-3);
+}
+
+.platform-card__name {
+  font: var(--t-body);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.platform-card__priority {
+  background: var(--gold-subtle);
+  color: var(--gold);
+  font: var(--t-micro);
+  padding: 2px var(--sp-3);
+  border-radius: var(--r-pill);
+}
+
+.platform-card__reason {
+  font: var(--t-body-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-2);
+  line-height: 1.5;
+}
+
+.platform-card__format {
+  font: var(--t-caption);
+  color: var(--text-tertiary);
+}
+
+/* ---- Material sections (per platform) ---- */
+
+.material-section {
+  background: var(--bg-secondary);
+  border-radius: var(--r-lg);
+  padding: var(--sp-5);
+  margin-bottom: var(--sp-4);
+}
+
+.material-section__title {
+  font: var(--t-title);
+  color: var(--gold);
+  margin-bottom: var(--sp-5);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.material-field {
+  padding: var(--sp-4) 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.material-field:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.material-field__label {
+  font: var(--t-caption);
+  color: var(--text-tertiary);
+  margin-bottom: var(--sp-2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.material-field__value {
+  font: var(--t-body-sm);
+  color: var(--text-primary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* ---- Copy button ---- */
+
+.copy-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font: var(--t-micro);
+  padding: 2px var(--sp-3);
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.copy-btn:hover {
+  border-color: var(--gold-border);
+  color: var(--gold);
+}
+
+.copy-btn--copied {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+/* ---- Kit generation loading ---- */
+
+.kit-loading {
+  text-align: center;
+  padding: var(--sp-12) var(--sp-4);
+}
+
+.kit-loading__title {
+  font: var(--t-title);
+  color: var(--text-primary);
+  margin-bottom: var(--sp-4);
+}
+
+.kit-loading__desc {
+  font: var(--t-body-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-8);
+}
+
+/* ---- Error state ---- */
+
+.error-banner {
+  background: rgba(255, 69, 58, 0.1);
+  border: 1px solid rgba(255, 69, 58, 0.3);
+  border-radius: var(--r-md);
+  padding: var(--sp-4) var(--sp-5);
+  margin: var(--sp-4) 0;
+  font: var(--t-body-sm);
+  color: var(--error);
+  text-align: center;
+}
+
+/* ---- Content direction banner ---- */
+
+.content-direction {
+  background: var(--gold-subtle);
+  border-left: 3px solid var(--gold);
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  margin-bottom: var(--sp-6);
+  font: var(--t-body-sm);
+  color: var(--gold);
+  line-height: 1.6;
+}

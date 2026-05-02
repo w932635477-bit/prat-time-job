@@ -3,187 +3,82 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>启点</title>
+  <title>启点 — 帮你把行业经验变成第一笔收入</title>
   <link rel="stylesheet" href="design-system.css">
-  <style>
-    .landing {
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: var(--sp-10) var(--page-padding);
-      padding-bottom: calc(var(--sp-10) + var(--safe-bottom));
-    }
-
-    .landing__icon {
-      width: 48px;
-      height: 48px;
-      margin-bottom: var(--sp-10);
-      opacity: 0;
-      animation: fadeIn 600ms ease-out 100ms forwards;
-    }
-
-    .landing__icon svg {
-      width: 100%;
-      height: 100%;
-    }
-
-    .landing__headline {
-      margin-bottom: var(--sp-4);
-      opacity: 0;
-      animation: fadeIn 400ms ease-out 200ms forwards;
-    }
-
-    .landing__headline-main {
-      font: var(--t-hero);
-      letter-spacing: var(--tracking-hero);
-      color: var(--text-primary);
-      display: block;
-    }
-
-    .landing__headline-gold {
-      font: var(--t-hero);
-      letter-spacing: var(--tracking-hero);
-      color: var(--gold);
-      display: block;
-    }
-
-    .landing__subtitle {
-      font: var(--t-body-sm);
-      color: var(--text-secondary);
-      margin-bottom: var(--sp-12);
-      opacity: 0;
-      animation: fadeIn 300ms ease-out 400ms forwards;
-    }
-
-    .landing__cta {
-      width: 100%;
-      max-width: 320px;
-      margin-bottom: var(--sp-3);
-      opacity: 0;
-      animation: fadeIn 300ms ease-out 500ms forwards;
-    }
-
-    .landing__phases {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: var(--sp-3);
-      width: 100%;
-      max-width: 360px;
-      margin-top: var(--sp-10);
-      opacity: 0;
-      animation: fadeIn 300ms ease-out 600ms forwards;
-    }
-
-    .landing__phase {
-      display: flex;
-      align-items: center;
-      gap: var(--sp-2);
-      padding: var(--sp-3);
-      background: var(--bg-secondary);
-      border-radius: var(--r-md);
-      text-align: left;
-    }
-
-    .landing__phase-num {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: var(--gold-subtle);
-      color: var(--gold);
-      font: var(--t-micro);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .landing__phase-text {
-      font: var(--t-caption);
-      color: var(--text-secondary);
-    }
-
-    .landing__phase-name {
-      font-weight: 500;
-      color: var(--text-primary);
-      display: block;
-    }
-
-    .landing__phase-desc {
-      display: block;
-    }
-  </style>
+  <link rel="stylesheet" href="css/chat.css">
 </head>
 <body>
-  <div class="landing">
-    <div class="landing__icon" role="img" aria-label="启点指南针">
-      <svg viewBox="0 0 48 48" fill="none" stroke="#C9A96E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="24" cy="24" r="20"/>
-        <polygon points="24,8 28,24 24,40 20,24" fill="rgba(201,169,110,0.15)" stroke="#C9A96E"/>
-        <line x1="24" y1="4" x2="24" y2="10"/>
-        <line x1="24" y1="38" x2="24" y2="44"/>
-        <line x1="4" y1="24" x2="10" y2="24"/>
-        <line x1="38" y1="24" x2="44" y2="24"/>
-      </svg>
-    </div>
 
-    <div class="landing__headline">
-      <span class="landing__headline-main">启点</span>
-      <span class="landing__headline-gold">陪你赚到第一块钱</span>
-    </div>
+  <!-- ===== View 1: Landing ===== -->
+  <div id="landing" class="view view--active">
+    <div class="landing-v4">
+      <div class="landing-v4__icon" role="img" aria-label="启点指南针">
+        <svg viewBox="0 0 48 48" fill="none" stroke="#C9A96E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="24" cy="24" r="20"/>
+          <polygon points="24,8 28,24 24,40 20,24" fill="rgba(201,169,110,0.15)" stroke="#C9A96E"/>
+          <line x1="24" y1="4" x2="24" y2="10"/>
+          <line x1="24" y1="38" x2="24" y2="44"/>
+          <line x1="4" y1="24" x2="10" y2="24"/>
+          <line x1="38" y1="24" x2="44" y2="24"/>
+        </svg>
+      </div>
 
-    <p class="landing__subtitle">从"我什么都不会"到"赚到第一笔钱"</p>
+      <div class="landing-v4__name">启点</div>
+      <p class="landing-v4__tagline">帮你把行业经验变成第一笔收入</p>
 
-    <div class="landing__cta">
-      <button class="btn-primary" onclick="location.href='app.html'" aria-label="开始旅程">开始你的旅程</button>
-    </div>
-
-    <div class="landing__phases">
-      <div class="landing__phase">
-        <div class="landing__phase-num">0</div>
-        <div class="landing__phase-text">
-          <span class="landing__phase-name">起跑评估</span>
-          <span class="landing__phase-desc">了解你的起点</span>
-        </div>
-      </div>
-      <div class="landing__phase">
-        <div class="landing__phase-num">1</div>
-        <div class="landing__phase-text">
-          <span class="landing__phase-name">发现金矿</span>
-          <span class="landing__phase-desc">发现你能卖什么</span>
-        </div>
-      </div>
-      <div class="landing__phase">
-        <div class="landing__phase-num">2</div>
-        <div class="landing__phase-text">
-          <span class="landing__phase-name">包装产品</span>
-          <span class="landing__phase-desc">把经验变成服务</span>
-        </div>
-      </div>
-      <div class="landing__phase">
-        <div class="landing__phase-num">3</div>
-        <div class="landing__phase-text">
-          <span class="landing__phase-name">找到客户</span>
-          <span class="landing__phase-desc">30天内容计划</span>
-        </div>
-      </div>
-      <div class="landing__phase">
-        <div class="landing__phase-num">4</div>
-        <div class="landing__phase-text">
-          <span class="landing__phase-name">完成首单</span>
-          <span class="landing__phase-desc">搞定第一单</span>
-        </div>
-      </div>
-      <div class="landing__phase">
-        <div class="landing__phase-num">5</div>
-        <div class="landing__phase-text">
-          <span class="landing__phase-name">转起来</span>
-          <span class="landing__phase-desc">持续赚钱</span>
-        </div>
+      <div class="landing-v4__cta">
+        <button id="startBtn" class="btn-primary" aria-label="开始">开始</button>
       </div>
     </div>
   </div>
+
+  <!-- ===== View 2: Chat ===== -->
+  <div id="chat" class="view chat-v4">
+
+    <!-- Header -->
+    <header class="app-header">
+      <span class="app-header__title">启点</span>
+    </header>
+
+    <!-- Messages -->
+    <div id="chat-messages" class="chat-v4__messages" role="log" aria-label="对话内容">
+    </div>
+
+    <!-- Input Bar -->
+    <div class="input-bar">
+      <div class="input-bar__inner">
+        <input class="input-bar__field" type="text" placeholder="说点什么..." id="chatInput" aria-label="输入消息">
+        <button class="input-bar__send" id="sendBtn" aria-label="发送消息">↑</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== View 3: Kit ===== -->
+  <div id="kit" class="view kit-view">
+
+    <!-- Header -->
+    <header class="app-header">
+      <span class="app-header__title">启动套件</span>
+    </header>
+
+    <div class="kit-view__content">
+      <div class="kit-view__intro fade-in">
+        <div class="kit-view__label">全部就绪</div>
+        <h1 class="kit-view__heading">你的启动套件</h1>
+        <p class="kit-view__desc">
+          基于你的经验，我们为你生成了全套启动素材。复制即可使用。
+        </p>
+      </div>
+
+      <div id="kit-content">
+        <!-- Kit content rendered by kit.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts (no modules — WeChat compatible) -->
+  <script src="js/chat.js"></script>
+  <script src="js/kit.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
