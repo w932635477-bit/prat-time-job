@@ -1,7 +1,7 @@
 [project]
 name = "starting-point"
-version = "0.1.0"
-description = "启点 — 帮助中年失业者将行业经验转化为收入"
+version = "4.0.0"
+description = "启点 v4.0 — 帮助中年失业者发现经验价值"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",
@@ -11,8 +11,6 @@ dependencies = [
     "httpx>=0.28.0",
     "aiosqlite>=0.20.0",
     "PyJWT>=2.8.0",
-    "alembic>=1.13.0",
-    "defusedxml>=0.7.0",
 ]
 
 [project.optional-dependencies]
@@ -20,6 +18,7 @@ dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",
     "pytest-cov>=6.0.0",
+    "pytest-httpx>=0.30.0",
 ]
 
 [build-system]
