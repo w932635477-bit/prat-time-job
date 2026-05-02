@@ -4,6 +4,8 @@ import json
 import logging
 import re
 
+from pydantic import ValidationError
+
 from starting_point.llm.client import LLMClient
 from starting_point.db.repos import MessageRepo, StateRepo
 from starting_point.models import ProductPackage, ChatResponse
@@ -79,7 +81,7 @@ class StageOneHandler:
                     stage_data=new_stage_data,
                     is_complete=True,
                 )
-            except Exception:
+            except ValidationError:
                 logger.warning("Stage 1 product package validation failed")
 
         await self._msg_repo.save(user_id, "assistant", response_text, stage=1)

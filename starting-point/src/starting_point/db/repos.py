@@ -116,7 +116,15 @@ class KitRepo:
         )
         await conn.commit()
 
+    ALLOWED_KIT_COLUMNS = frozenset({
+        "product_package", "content_direction",
+        "platform_recommendations", "startup_materials", "generation_status",
+    })
+
     async def update_kit(self, kit_id: int, **fields: Any) -> None:
+        invalid = set(fields) - self.ALLOWED_KIT_COLUMNS
+        if invalid:
+            raise ValueError(f"Invalid kit columns: {invalid}")
         sets: list[str] = []
         values: list[Any] = []
         for key, value in fields.items():

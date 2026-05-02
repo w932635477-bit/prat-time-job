@@ -4,6 +4,8 @@ import json
 import logging
 import re
 
+from pydantic import ValidationError
+
 from starting_point.llm.client import LLMClient
 from starting_point.db.repos import MessageRepo, StateRepo
 from starting_point.models import StageZeroOutput, ChatResponse
@@ -132,7 +134,7 @@ class StageZeroHandler:
                 stage_data=new_stage_data,
                 is_complete=True,
             )
-        except Exception:
+        except ValidationError:
             # JSON didn't validate (e.g. < 3 points) -> continue conversation
             logger.warning("Stage 0 JSON validation failed, continuing conversation")
             follow_up = "你提取的知识点还不够，请继续提问来发现更多可变现的经验。"
