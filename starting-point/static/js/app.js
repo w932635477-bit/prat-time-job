@@ -12,7 +12,7 @@ var App = (function () {
   function getUserId() {
     var id = localStorage.getItem(USER_ID_KEY);
     if (!id) {
-      id = 'u_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+      id = 'u_' + crypto.randomUUID();
       localStorage.setItem(USER_ID_KEY, id);
     }
     return id;
@@ -133,7 +133,21 @@ var App = (function () {
           return;
         }
 
-        // Otherwise stay on landing, user will click start
+        if (data.status === 'pending' || data.status === 'not_found') {
+          // Check conversation state — user may be mid-conversation
+          fetch('/api/state/' + encodeURIComponent(userId))
+            .then(function (r) {
+              if (!r.ok) return null;
+              return r.json();
+            })
+            .then(function (state) {
+              if (state && state.current_stage != null) {
+                showView('chat');
+                Chat.sendMessage(userId, '');
+              }
+            })
+            .catch(function () {});
+        }
       })
       .catch(function () {
         // Ignore errors, stay on landing

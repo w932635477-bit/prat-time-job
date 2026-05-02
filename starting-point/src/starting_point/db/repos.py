@@ -27,7 +27,7 @@ class MessageRepo:
             (user_id, stage),
         )
         rows = await cursor.fetchall()
-        return [{"role": row[0], "content": row[1]} for row in rows]
+        return [{"role": row["role"], "content": row["content"]} for row in rows]
 
     async def count_by_role(self, user_id: str, stage: int, role: str) -> int:
         conn = self._db.conn()
@@ -68,7 +68,7 @@ class StateRepo:
         row = await cursor.fetchone()
         if row is None:
             return None
-        return {"current_stage": row[0], "stage_data": json.loads(row[1])}
+        return {"current_stage": row["current_stage"], "stage_data": json.loads(row["stage_data"])}
 
 
 class KitRepo:
@@ -99,13 +99,13 @@ class KitRepo:
         if row is None:
             return None
         return {
-            "id": row[0],
-            "knowledge_points": json.loads(row[1]),
-            "product_package": json.loads(row[2]) if row[2] else None,
-            "content_direction": row[3],
-            "platform_recommendations": json.loads(row[4]) if row[4] else [],
-            "startup_materials": json.loads(row[5]) if row[5] else {},
-            "generation_status": row[6],
+            "id": row["id"],
+            "knowledge_points": json.loads(row["knowledge_points"]),
+            "product_package": json.loads(row["product_package"]) if row["product_package"] else None,
+            "content_direction": row["content_direction"],
+            "platform_recommendations": json.loads(row["platform_recommendations"]) if row["platform_recommendations"] else [],
+            "startup_materials": json.loads(row["startup_materials"]) if row["startup_materials"] else {},
+            "generation_status": row["generation_status"],
         }
 
     async def update_status(self, kit_id: int, status: str) -> None:

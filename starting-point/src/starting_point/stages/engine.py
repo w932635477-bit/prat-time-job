@@ -20,11 +20,12 @@ class ConversationEngine:
         llm: LLMClient,
         msg_repo: MessageRepo,
         state_repo: StateRepo,
+        kit_repo: KitRepo,
     ) -> None:
         self._llm = llm
         self._msg_repo = msg_repo
         self._state_repo = state_repo
-        self._kit_repo = KitRepo(msg_repo._db)
+        self._kit_repo = kit_repo
 
     async def handle(self, user_id: str, message: str) -> ChatResponse:
         state = await self._state_repo.load(user_id)
@@ -47,10 +48,20 @@ class ConversationEngine:
                     kps = result.stage_data.get("knowledge_points", [])
                     pkg = result.stage_data.get("product_package", {})
                     kit = await kit_gen.generate(user_id, kps, pkg)
-                    result.stage_data["kit_id"] = kit["id"]
+                    result = ChatResponse(
+                        message=result.message,
+                        stage=result.stage,
+                        stage_data={**result.stage_data, "kit_id": kit["id"]},
+                        is_complete=result.is_complete,
+                    )
                 except Exception as e:
                     logger.error("Kit generation failed: %s", e)
-                    result.stage_data["kit_error"] = str(e)
+                    result = ChatResponse(
+                        message=result.message,
+                        stage=result.stage,
+                        stage_data={**result.stage_data, "kit_error": "启动套件生成失败，请重试"},
+                        is_complete=result.is_complete,
+                    )
             return result
 
         # Stage 2+ = kit generated, user is viewing results

@@ -5,13 +5,12 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_initialize_creates_tables(db):
-    """All 4 tables should exist after initialization."""
+    """All tables should exist after initialization."""
     conn = db.conn()
     cursor = await conn.execute(
         "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
     )
     tables = {row[0] for row in await cursor.fetchall()}
-    assert "users" in tables
     assert "messages" in tables
     assert "conversation_states" in tables
     assert "startup_kits" in tables

@@ -8,14 +8,6 @@ import aiosqlite
 SCHEMA_VERSION = 1
 
 _MIGRATIONS = """
-CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    wechat_openid TEXT UNIQUE NOT NULL,
-    nickname TEXT NOT NULL DEFAULT '',
-    avatar_url TEXT NOT NULL DEFAULT '',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id TEXT NOT NULL,
@@ -58,6 +50,8 @@ class Database:
     async def initialize(self) -> None:
         self._conn = await aiosqlite.connect(self._db_path)
         self._conn.row_factory = aiosqlite.Row
+        await self._conn.execute("PRAGMA journal_mode=WAL")
+        await self._conn.execute("PRAGMA busy_timeout=5000")
         await self._conn.executescript(_MIGRATIONS)
         await self._conn.commit()
 

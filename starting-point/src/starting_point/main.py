@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from starting_point.config import settings
 from starting_point.db.database import Database
@@ -25,7 +26,8 @@ async def lifespan(app: FastAPI):
     llm = LLMClient()
     msg_repo = MessageRepo(db)
     state_repo = StateRepo(db)
-    app.state.engine = ConversationEngine(llm, msg_repo, state_repo)
+    kit_repo = KitRepo(db)
+    app.state.engine = ConversationEngine(llm, msg_repo, state_repo, kit_repo)
     app.state.db = db
     app.state.llm = llm
     yield
@@ -45,6 +47,19 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "Authorization"],
 )
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 
 @app.post("/api/chat", response_model=ChatResponse)
@@ -71,6 +86,16 @@ async def kit_status(user_id: str, request: Request):
     if kit is None:
         return {"status": "not_found"}
     return {"status": kit["generation_status"]}
+
+
+@app.get("/api/state/{user_id}")
+async def get_state(user_id: str, request: Request):
+    db: Database = request.app.state.db
+    state_repo = StateRepo(db)
+    state = await state_repo.load(user_id)
+    if state is None:
+        return {"current_stage": None}
+    return state
 
 
 @app.get("/")

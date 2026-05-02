@@ -43,7 +43,7 @@ async def test_chat_raises_on_api_error():
 @pytest.mark.asyncio
 async def test_chat_json_validates_and_returns_parsed():
     from starting_point.llm.client import LLMClient
-    from starting_point.models import KnowledgePoint
+    from starting_point.models import StageZeroOutput
 
     json_output = json.dumps({
         "knowledge_points": [
@@ -82,6 +82,6 @@ async def test_chat_json_validates_and_returns_parsed():
         mock_http.post = AsyncMock(return_value=_make_response(resp_body))
         result = await client.chat_json(
             messages=[{"role": "user", "content": "test"}],
-            schema=KnowledgePoint,
+            schema=StageZeroOutput,
         )
-    assert "knowledge_points" in result
+    assert len(result.knowledge_points) == 3

@@ -29,6 +29,10 @@ class PriceRange(BaseModel):
     max: int = Field(ge=0)
     currency: str = Field(default="CNY")
 
+    def model_post_init(self, __context: object) -> None:
+        if self.min > self.max:
+            raise ValueError(f"min ({self.min}) must be <= max ({self.max})")
+
 
 class ProductPackage(BaseModel):
     selected_knowledge_id: str = Field(pattern=r"^kp_\d+$")
@@ -48,7 +52,7 @@ class PlatformRecommendation(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    user_id: str = Field(min_length=1)
+    user_id: str = Field(min_length=1, max_length=64)
     message: str = Field(min_length=2, max_length=500)
 
 

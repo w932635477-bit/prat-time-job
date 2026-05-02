@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 import logging
 from typing import TypeVar
 
@@ -9,6 +8,7 @@ import httpx
 from pydantic import BaseModel, ValidationError
 
 from starting_point.config import settings
+from starting_point.utils.json import extract_json
 
 logger = logging.getLogger(__name__)
 
@@ -57,13 +57,22 @@ class LLMClient:
         system: str | None = None,
         temperature: float = 0.7,
         max_tokens: int = 4096,
-    ) -> dict:
+    ) -> T:
         """Chat with JSON extraction + Pydantic validation + retry."""
         for attempt in range(MAX_JSON_RETRIES):
             text = await self.chat(messages, system, temperature, max_tokens)
             parsed = self._extract_json(text)
             if parsed is not None:
-                return parsed
+                try:
+                    return schema.model_validate(parsed)
+                except ValidationError as e:
+                    logger.warning(
+                        "LLM JSON validation failed (attempt %d/%d): %s",
+                        attempt + 1,
+                        MAX_JSON_RETRIES,
+                        e,
+                    )
+                    continue
             logger.warning(
                 "LLM JSON parse failed (attempt %d/%d)",
                 attempt + 1,
@@ -104,16 +113,4 @@ class LLMClient:
                 parts.append(block.get("text", ""))
         return "\n".join(parts)
 
-    @staticmethod
-    def _extract_json(text: str) -> dict | None:
-        """Extract JSON from text -- handles ```json blocks and raw JSON."""
-        json_block = re.search(r"```json\s*\n(.*?)\n```", text, re.DOTALL)
-        if json_block:
-            try:
-                return json.loads(json_block.group(1))
-            except json.JSONDecodeError:
-                pass
-        try:
-            return json.loads(text)
-        except json.JSONDecodeError:
-            return None
+    _extract_json = staticmethod(extract_json)

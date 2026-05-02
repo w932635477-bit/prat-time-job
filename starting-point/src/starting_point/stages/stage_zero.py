@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 
 from pydantic import ValidationError
 
@@ -10,24 +9,11 @@ from starting_point.llm.client import LLMClient
 from starting_point.db.repos import MessageRepo, StateRepo
 from starting_point.models import StageZeroOutput, ChatResponse
 from starting_point.prompts.stage_zero import SYSTEM_PROMPT, FORCE_EXTRACT_SUFFIX
+from starting_point.utils.json import extract_json
 
 logger = logging.getLogger(__name__)
 
 MAX_STAGE0_MESSAGES = 10
-
-
-def _extract_json(text: str) -> dict | None:
-    """Extract JSON from LLM response text."""
-    json_block = re.search(r"```json\s*\n(.*?)\n```", text, re.DOTALL)
-    if json_block:
-        try:
-            return json.loads(json_block.group(1))
-        except json.JSONDecodeError:
-            pass
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        return None
 
 
 class StageZeroHandler:
@@ -89,7 +75,7 @@ class StageZeroHandler:
         )
 
         # Try to parse as JSON
-        parsed = _extract_json(response_text)
+        parsed = extract_json(response_text)
         if parsed is not None and "knowledge_points" in parsed:
             return await self._handle_json_output(
                 user_id, parsed, stage_data, user_msg_count,

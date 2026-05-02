@@ -10,9 +10,9 @@ class Settings(BaseSettings):
     database_path: Path = Path("starting_point.db")
     host: str = "127.0.0.1"
     port: int = 8000
-    jwt_secret: str = ""
+    jwt_secret: str = "CHANGE-ME-IN-PRODUCTION"
     jwt_expiry_hours: int = 24
-    cors_origins: list[str] = ["*"]
+    cors_origins: list[str] = ["http://127.0.0.1:8000", "http://localhost:8000"]
     wx_app_id: str = ""
     wx_app_secret: str = ""
 
