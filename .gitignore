@@ -11,3 +11,4 @@ starting-point/.env
 starting-point/*.db
 *.egg-info/
 .gstack/
+.claude/skills/
