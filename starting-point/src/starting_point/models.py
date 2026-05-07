@@ -95,10 +95,9 @@ class Order(BaseModel):
 
 
 TIER_DEFINITIONS: dict[str, dict] = {
-    "free": {"label": "免费版", "price_fen": 0, "duration_days": 0},
-    "low_ticket": {"label": "基础版 ¥19.9", "price_fen": 1990, "duration_days": 60},
-    "standard": {"label": "标准版 ¥59", "price_fen": 5900, "duration_days": 60},
-    "human": {"label": "人工辅导版 ¥199", "price_fen": 19900, "duration_days": 60},
+    "free": {"label": "免费体验", "price_fen": 0, "duration_days": 0},
+    "standard": {"label": "完整方案包 ¥29", "price_fen": 2900, "duration_days": 60},
+    "human": {"label": "真人教练加持 ¥199", "price_fen": 19900, "duration_days": 60},
 }
 
 

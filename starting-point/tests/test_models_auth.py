@@ -9,12 +9,13 @@ def test_user_defaults():
 
 
 def test_order_defaults():
-    o = Order(id="o1", user_id="u1", tier="standard", amount=5900)
+    o = Order(id="o1", user_id="u1", tier="standard", amount=2900)
     assert o.status == "pending"
     assert o.paid_at is None
 
 
 def test_tier_definitions():
     assert TIER_DEFINITIONS["free"]["price_fen"] == 0
-    assert TIER_DEFINITIONS["standard"]["price_fen"] == 5900
-    assert TIER_DEFINITIONS["low_ticket"]["duration_days"] == 60
+    assert TIER_DEFINITIONS["standard"]["price_fen"] == 2900
+    assert TIER_DEFINITIONS["human"]["price_fen"] == 19900
+    assert "low_ticket" not in TIER_DEFINITIONS

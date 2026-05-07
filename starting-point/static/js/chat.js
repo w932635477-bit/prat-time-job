@@ -221,7 +221,7 @@ var Chat = (function () {
       return;
     }
 
-    // Stage 1 complete: product packaged, transition to kit
+    // Stage 1 complete: product packaged, check access before kit
     if (data.is_complete && data.stage >= 2) {
       var pkg =
         (data.stage_data && data.stage_data.product_package) || null;
@@ -229,16 +229,13 @@ var Chat = (function () {
         messages.appendChild(renderProductPackage(pkg));
       }
 
-      // Transition to kit view
-      messages.appendChild(
-        renderBubbleAi('产品方案确定了！正在为你生成启动套件...')
-      );
-      scrollToBottom();
-
-      // Notify app.js to switch to kit view
-      if (typeof App !== 'undefined' && App.onStageOneComplete) {
+      // Check paywall before transitioning to kit
+      if (typeof Paywall !== 'undefined' && Paywall.checkAndShow) {
+        Paywall.checkAndShow(App.getUserId(), data);
+      } else if (typeof App !== 'undefined' && App.onStageOneComplete) {
         App.onStageOneComplete(data);
       }
+      scrollToBottom();
       return;
     }
 

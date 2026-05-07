@@ -42,7 +42,7 @@ async def test_full_auth_and_payment_flow(db):
 
     # 5. Create order
     order_repo = OrderRepo(db)
-    order = Order(id="o1", user_id="u1", tier="standard", amount=5900)
+    order = Order(id="o1", user_id="u1", tier="standard", amount=2900)
     await order_repo.save_order(order)
 
     # 6. Simulate payment callback
@@ -71,7 +71,7 @@ async def test_delete_user_cascades(db):
     user = User(id="u2", wx_openid="wx_del", nickname="待删除")
     await user_repo.save_user(user)
 
-    order = Order(id="o2", user_id="u2", tier="low_ticket", amount=1990)
+    order = Order(id="o2", user_id="u2", tier="human", amount=19900)
     await order_repo.save_order(order)
 
     await user_repo.delete_user("u2")

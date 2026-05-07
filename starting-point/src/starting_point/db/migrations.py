@@ -74,5 +74,9 @@ async def run_migrations(db: object) -> None:
         CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type);
         CREATE INDEX IF NOT EXISTS idx_events_created ON events(created_at);
         CREATE INDEX IF NOT EXISTS idx_feedback_user_id ON feedback(user_id);
+
+        -- Migrate legacy low_ticket tier to standard
+        UPDATE users SET tier = 'standard' WHERE tier = 'low_ticket';
+        UPDATE orders SET tier = 'standard' WHERE tier = 'low_ticket';
     """)
     await conn.commit()

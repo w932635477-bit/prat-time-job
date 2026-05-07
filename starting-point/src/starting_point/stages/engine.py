@@ -5,6 +5,7 @@ import logging
 from starting_point.llm.client import LLMClient
 from starting_point.db.repos import MessageRepo, StateRepo, KitRepo
 from starting_point.models import ChatResponse
+from starting_point.payments.access import check_phase_access
 from starting_point.stages.stage_zero import StageZeroHandler
 from starting_point.stages.stage_one import StageOneHandler
 from starting_point.stages.kit_generator import KitGenerator
@@ -27,9 +28,23 @@ class ConversationEngine:
         self._state_repo = state_repo
         self._kit_repo = kit_repo
 
-    async def handle(self, user_id: str, message: str) -> ChatResponse:
+    async def handle(
+        self,
+        user_id: str,
+        message: str,
+        tier: str = "free",
+        tier_expires_at=None,
+    ) -> ChatResponse:
         state = await self._state_repo.load(user_id)
         current_stage = state["current_stage"] if state else 0
+
+        access = check_phase_access(tier, tier_expires_at, current_stage)
+        if not access.allowed:
+            return ChatResponse(
+                message="你已经完成了免费体验部分。解锁完整方案，继续你的旅程。",
+                stage=current_stage,
+                is_complete=False,
+            )
 
         if current_stage == 0:
             handler = StageZeroHandler(self._llm, self._msg_repo, self._state_repo)

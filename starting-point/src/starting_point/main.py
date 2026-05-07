@@ -127,7 +127,18 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
     engine: ConversationEngine = request.app.state.engine
     from starting_point.admin.events import track_event
     await track_event(request.app.state.db, req.user_id, "chat_message")
-    return await engine.handle(user_id=req.user_id, message=req.message)
+
+    user_repo: UserRepo = request.app.state.user_repo
+    user = await user_repo.get_user(req.user_id)
+    tier = user.tier if user else "free"
+    tier_expires_at = user.tier_expires_at if user else None
+
+    return await engine.handle(
+        user_id=req.user_id,
+        message=req.message,
+        tier=tier,
+        tier_expires_at=tier_expires_at,
+    )
 
 
 @app.get("/api/kit/{user_id}")

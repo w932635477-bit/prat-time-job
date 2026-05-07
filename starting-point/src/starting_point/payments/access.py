@@ -24,10 +24,7 @@ def check_phase_access(
     if tier_expires_at and datetime.now() > tier_expires_at:
         return AccessResult(allowed=False, reason="tier_expired")
 
-    if tier == "low_ticket" and phase_index > 2:
-        return AccessResult(allowed=False, reason="low_ticket_limit")
-
-    if tier in ("low_ticket", "standard", "human"):
+    if tier in ("standard", "human"):
         return AccessResult(allowed=True)
 
     return AccessResult(allowed=False, reason="unknown_tier")
