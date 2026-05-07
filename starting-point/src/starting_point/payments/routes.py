@@ -10,6 +10,7 @@ from starting_point.auth.middleware import extract_bearer, get_current_user, get
 from starting_point.config import settings
 from starting_point.db.order_repo import OrderRepo
 from starting_point.db.user_repo import UserRepo
+from starting_point.admin.events import track_event
 from starting_point.models import Order, TIER_DEFINITIONS
 from starting_point.payments.tiers import get_tiers
 from starting_point.payments.wechat import create_prepay_order, verify_callback
@@ -42,6 +43,7 @@ async def create_order(tier: str, request: Request):
 
     order_repo: OrderRepo = request.app.state.order_repo
     await order_repo.save_order(order)
+    await track_event(request.app.state.db, user.id, "payment_create", {"tier": tier})
 
     notify_url = str(request.base_url).rstrip("/") + "/api/payments/wechat/callback"
     prepay = await create_prepay_order(
@@ -92,6 +94,7 @@ async def wechat_pay_callback(request: Request):
             "tier_expires_at": datetime.now() + timedelta(days=duration_days),
         })
         await user_repo.save_user(updated)
+        await track_event(request.app.state.db, order.user_id, "payment_complete", {"order_id": order_id, "tier": order.tier})
 
     return Response(content=SUCCESS_XML, media_type="application/xml")
 

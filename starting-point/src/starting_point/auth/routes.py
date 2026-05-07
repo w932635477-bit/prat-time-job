@@ -9,6 +9,7 @@ from starting_point.auth.middleware import extract_bearer, get_current_user
 from starting_point.auth.wechat import build_authorize_url, exchange_code_for_token, get_user_info
 from starting_point.config import settings
 from starting_point.db.user_repo import UserRepo
+from starting_point.admin.events import track_event
 from starting_point.models import User
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -54,6 +55,7 @@ async def wechat_callback(code: str | None = None, state: str | None = None, req
         await repo.save_user(user)
 
     jwt_token = create_token(user.id)
+    await track_event(request.app.state.db, user.id, "login")
     response = RedirectResponse(url="/app.html")
     response.set_cookie("token", jwt_token, httponly=True, max_age=settings.jwt_expiry_hours * 3600)
     return response

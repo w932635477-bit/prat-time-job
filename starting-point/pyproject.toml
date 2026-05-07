@@ -11,6 +11,7 @@ dependencies = [
     "httpx>=0.28.0",
     "aiosqlite>=0.20.0",
     "PyJWT>=2.8.0",
+    "firecrawl-py>=4.25.2",
 ]
 
 [project.optional-dependencies]

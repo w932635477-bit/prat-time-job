@@ -11,7 +11,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from starting_point.config import settings
 from starting_point.db.database import Database
+from starting_point.db.migrations import run_migrations
 from starting_point.db.repos import MessageRepo, StateRepo, KitRepo
+from starting_point.db.user_repo import UserRepo
+from starting_point.db.order_repo import OrderRepo
 from starting_point.llm.client import LLMClient
 from starting_point.models import ChatRequest, ChatResponse
 from starting_point.stages.engine import ConversationEngine
@@ -23,13 +26,20 @@ STATIC_DIR = Path(__file__).resolve().parent.parent.parent / "static"
 async def lifespan(app: FastAPI):
     db = Database(settings.database_path)
     await db.initialize()
+    await run_migrations(db)
+
     llm = LLMClient()
     msg_repo = MessageRepo(db)
     state_repo = StateRepo(db)
     kit_repo = KitRepo(db)
+    user_repo = UserRepo(db)
+    order_repo = OrderRepo(db)
+
     app.state.engine = ConversationEngine(llm, msg_repo, state_repo, kit_repo)
     app.state.db = db
     app.state.llm = llm
+    app.state.user_repo = user_repo
+    app.state.order_repo = order_repo
     yield
     await llm.close()
     await db.close()
@@ -44,7 +54,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Content-Type", "Authorization"],
 )
 
@@ -61,10 +71,23 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(SecurityHeadersMiddleware)
 
+# Route registration
+from starting_point.auth.routes import router as auth_router
+from starting_point.payments.routes import router as payment_router
+from starting_point.user.routes import router as user_router
+from starting_point.admin.routes import router as admin_router
+
+app.include_router(auth_router)
+app.include_router(payment_router)
+app.include_router(user_router)
+app.include_router(admin_router)
+
 
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest, request: Request) -> ChatResponse:
     engine: ConversationEngine = request.app.state.engine
+    from starting_point.admin.events import track_event
+    await track_event(request.app.state.db, req.user_id, "chat_message")
     return await engine.handle(user_id=req.user_id, message=req.message)
 
 

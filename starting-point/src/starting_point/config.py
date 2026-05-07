@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://127.0.0.1:8000", "http://localhost:8000"]
     wx_app_id: str = ""
     wx_app_secret: str = ""
+    wx_pay_mch_id: str = ""
+    wx_pay_api_key: str = ""
+    wx_pay_notify_url: str = ""
+    admin_password: str = "changeme"
+    firecrawl_api_key: str = ""
 
     model_config = {"env_prefix": "SP_", "env_file": ".env"}
 

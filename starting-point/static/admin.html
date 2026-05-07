@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>启点 - 管理后台</title>
+<link rel="stylesheet" href="design-system.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font: var(--t-body); background: var(--bg-primary); color: var(--text-primary); display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar { width: 220px; background: var(--bg-secondary); padding: var(--sp-6); flex-shrink: 0; border-right: 1px solid var(--border); }
+  .sidebar h2 { font: var(--t-title); color: var(--gold); margin-bottom: var(--sp-6); }
+  .sidebar nav a { display: block; padding: var(--sp-3) var(--sp-4); color: var(--text-secondary); text-decoration: none; border-radius: 8px; margin-bottom: 4px; cursor: pointer; }
+  .sidebar nav a:hover, .sidebar nav a.active { color: var(--text-primary); background: var(--bg-tertiary); }
+  .sidebar nav a.active { color: var(--gold); }
+
+  /* Main content */
+  .main { flex: 1; padding: var(--sp-6); overflow-y: auto; max-height: 100vh; }
+  .main h1 { font: var(--t-hero); margin-bottom: var(--sp-6); letter-spacing: var(--tracking-hero); }
+
+  /* Login overlay */
+  .login-overlay { position: fixed; inset: 0; background: var(--bg-primary); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .login-box { background: var(--bg-secondary); padding: var(--sp-8); border-radius: 16px; width: 360px; border: 1px solid var(--border); }
+  .login-box h2 { font: var(--t-title); color: var(--gold); margin-bottom: var(--sp-5); text-align: center; }
+  .login-box input { width: 100%; padding: var(--sp-3) var(--sp-4); background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font: var(--t-body); margin-bottom: var(--sp-4); }
+  .login-box button { width: 100%; padding: var(--sp-3); background: var(--gold); color: var(--bg-primary); border: none; border-radius: 8px; font: var(--t-button); cursor: pointer; }
+  .login-box button:hover { opacity: 0.9; }
+  .login-error { color: var(--error); font: var(--t-caption); margin-bottom: var(--sp-3); display: none; }
+
+  /* Cards */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--sp-4); margin-bottom: var(--sp-6); }
+  .stat-card { background: var(--bg-secondary); padding: var(--sp-5); border-radius: 12px; border: 1px solid var(--border); }
+  .stat-card .label { font: var(--t-caption); color: var(--text-secondary); margin-bottom: var(--sp-2); }
+  .stat-card .value { font: 600 28px/36px var(--font-main); color: var(--gold); }
+  .stat-card .sub { font: var(--t-micro); color: var(--text-tertiary); margin-top: var(--sp-1); }
+
+  /* Tables */
+  .data-table { width: 100%; border-collapse: collapse; background: var(--bg-secondary); border-radius: 12px; overflow: hidden; }
+  .data-table th { text-align: left; padding: var(--sp-3) var(--sp-4); font: var(--t-micro); color: var(--text-secondary); background: var(--bg-tertiary); text-transform: uppercase; letter-spacing: 0.05em; }
+  .data-table td { padding: var(--sp-3) var(--sp-4); font: var(--t-body-sm); border-top: 1px solid var(--divider); }
+  .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font: var(--t-micro); }
+  .badge-paid { background: rgba(76,175,80,0.15); color: #4CAF50; }
+  .badge-pending { background: rgba(255,193,7,0.15); color: #FFC107; }
+  .badge-free { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
+
+  /* Search & Filters */
+  .toolbar { display: flex; gap: var(--sp-3); margin-bottom: var(--sp-4); flex-wrap: wrap; }
+  .toolbar input, .toolbar select { padding: var(--sp-2) var(--sp-3); background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font: var(--t-body-sm); }
+  .toolbar input { min-width: 200px; }
+
+  /* Pagination */
+  .pagination { display: flex; gap: var(--sp-2); margin-top: var(--sp-4); justify-content: center; }
+  .pagination button { padding: var(--sp-2) var(--sp-3); background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; color: var(--text-secondary); cursor: pointer; font: var(--t-body-sm); }
+  .pagination button:hover { color: var(--text-primary); }
+  .pagination button.active { background: var(--gold); color: var(--bg-primary); border-color: var(--gold); }
+  .pagination button:disabled { opacity: 0.3; cursor: default; }
+
+  /* Section */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Revenue chart placeholder */
+  .chart-area { background: var(--bg-secondary); border-radius: 12px; padding: var(--sp-5); border: 1px solid var(--border); margin-bottom: var(--sp-5); }
+  .chart-area canvas { width: 100%; height: 300px; }
+
+  /* Funnel */
+  .funnel { display: flex; flex-direction: column; gap: var(--sp-2); max-width: 500px; }
+  .funnel-step { display: flex; align-items: center; gap: var(--sp-4); }
+  .funnel-bar { height: 36px; background: var(--gold-subtle); border-radius: 6px; display: flex; align-items: center; padding: 0 var(--sp-3); color: var(--gold); font: var(--t-body-sm); transition: width 0.5s; }
+  .funnel-label { font: var(--t-caption); color: var(--text-secondary); min-width: 80px; text-align: right; }
+
+  /* Hidden */
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- Login Overlay -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>启点管理后台</h2>
+    <div class="login-error" id="loginError">密码错误</div>
+    <input type="password" id="loginPassword" placeholder="输入管理密码" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">登录</button>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <h2>启点</h2>
+  <nav>
+    <a class="active" onclick="showSection('dashboard')">仪表盘</a>
+    <a onclick="showSection('users')">用户管理</a>
+    <a onclick="showSection('orders')">订单管理</a>
+    <a onclick="showSection('analytics')">数据分析</a>
+    <a onclick="showSection('messages')">用户消息</a>
+    <a onclick="showSection('feedback')">用户反馈</a>
+  </nav>
+</aside>
+
+<!-- Main Content -->
+<div class="main">
+  <!-- Dashboard -->
+  <div class="section active" id="sec-dashboard">
+    <h1>仪表盘</h1>
+    <div class="stat-grid" id="statsGrid">
+      <div class="stat-card"><div class="label">总用户</div><div class="value" id="s-totalUsers">-</div></div>
+      <div class="stat-card"><div class="label">今日新增</div><div class="value" id="s-todayNew">-</div></div>
+      <div class="stat-card"><div class="label">总收入 (元)</div><div class="value" id="s-totalRevenue">-</div></div>
+      <div class="stat-card"><div class="label">付费用户</div><div class="value" id="s-paidUsers">-</div></div>
+      <div class="stat-card"><div class="label">今日收入 (元)</div><div class="value" id="s-todayRevenue">-</div></div>
+      <div class="stat-card"><div class="label">待处理订单</div><div class="value" id="s-pendingOrders">-</div></div>
+    </div>
+    <h3 style="margin-bottom:var(--sp-3); font:var(--t-title);">收入趋势</h3>
+    <div class="chart-area"><canvas id="revenueChart"></canvas></div>
+  </div>
+
+  <!-- Users -->
+  <div class="section" id="sec-users">
+    <h1>用户管理</h1>
+    <div class="toolbar">
+      <input type="text" id="userSearch" placeholder="搜索昵称或手机号" oninput="loadUsers()">
+    </div>
+    <table class="data-table">
+      <thead><tr><th>ID</th><th>昵称</th><th>手机</th><th>套餐</th><th>到期时间</th><th>注册时间</th></tr></thead>
+      <tbody id="usersBody"></tbody>
+    </table>
+    <div class="pagination" id="usersPagination"></div>
+  </div>
+
+  <!-- Orders -->
+  <div class="section" id="sec-orders">
+    <h1>订单管理</h1>
+    <div class="toolbar">
+      <select id="orderStatusFilter" onchange="loadOrders()">
+        <option value="">全部状态</option>
+        <option value="pending">待支付</option>
+        <option value="paid">已支付</option>
+      </select>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>订单号</th><th>用户</th><th>套餐</th><th>金额(元)</th><th>状态</th><th>创建时间</th></tr></thead>
+      <tbody id="ordersBody"></tbody>
+    </table>
+    <div class="pagination" id="ordersPagination"></div>
+  </div>
+
+  <!-- Analytics -->
+  <div class="section" id="sec-analytics">
+    <h1>数据分析</h1>
+    <h3 style="margin-bottom:var(--sp-3); font:var(--t-title);">转化漏斗</h3>
+    <div class="funnel" id="conversionFunnel"></div>
+    <h3 style="margin:var(--sp-6) 0 var(--sp-3); font:var(--t-title);">用户留存</h3>
+    <table class="data-table">
+      <thead><tr><th>注册日期</th><th>注册人数</th><th>7日活跃</th><th>7日留存</th><th>30日活跃</th><th>30日留存</th></tr></thead>
+      <tbody id="retentionBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Messages -->
+  <div class="section" id="sec-messages">
+    <h1>用户消息</h1>
+    <table class="data-table">
+      <thead><tr><th>用户</th><th>角色</th><th>内容</th><th>阶段</th><th>时间</th></tr></thead>
+      <tbody id="messagesBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Feedback -->
+  <div class="section" id="sec-feedback">
+    <h1>用户反馈</h1>
+    <table class="data-table">
+      <thead><tr><th>用户</th><th>评分</th><th>内容</th><th>状态</th><th>时间</th></tr></thead>
+      <tbody id="feedbackBody"></tbody>
+    </table>
+    <div class="pagination" id="feedbackPagination"></div>
+  </div>
+</div>
+
+<script>
+let TOKEN = localStorage.getItem('admin_token') || '';
+let currentPage = { users: 1, orders: 1, feedback: 1 };
+
+// --- Auth ---
+async function doLogin() {
+  const pwd = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  try {
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pwd })
+    });
+    if (!res.ok) { errEl.style.display = 'block'; return; }
+    const data = await res.json();
+    TOKEN = data.token;
+    localStorage.setItem('admin_token', TOKEN);
+    document.getElementById('loginOverlay').classList.add('hidden');
+    loadDashboard();
+  } catch { errEl.style.display = 'block'; }
+}
+
+async function api(path) {
+  const res = await fetch(path, { headers: { 'Authorization': 'Bearer ' + TOKEN } });
+  if (res.status === 401) { localStorage.removeItem('admin_token'); location.reload(); }
+  return res.json();
+}
+
+function fenToYuan(fen) { return (fen / 100).toFixed(2); }
+function fmtDate(d) { return d ? new Date(d).toLocaleString('zh-CN') : '-'; }
+
+// --- Navigation ---
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+  document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+  event.target.classList.add('active');
+  const loaders = { dashboard: loadDashboard, users: loadUsers, orders: loadOrders, analytics: loadAnalytics, messages: loadMessages, feedback: loadFeedback };
+  if (loaders[name]) loaders[name]();
+}
+
+// --- Dashboard ---
+async function loadDashboard() {
+  const stats = await api('/api/admin/dashboard');
+  document.getElementById('s-totalUsers').textContent = stats.total_users;
+  document.getElementById('s-todayNew').textContent = stats.today_new;
+  document.getElementById('s-totalRevenue').textContent = fenToYuan(stats.total_revenue);
+  document.getElementById('s-paidUsers').textContent = stats.paid_users;
+  document.getElementById('s-todayRevenue').textContent = fenToYuan(stats.today_revenue);
+  document.getElementById('s-pendingOrders').textContent = stats.pending_orders;
+
+  const rev = await api('/api/admin/analytics/revenue?days=30');
+  drawRevenueChart(rev.daily);
+}
+
+function drawRevenueChart(daily) {
+  const canvas = document.getElementById('revenueChart');
+  if (!daily || daily.length === 0) { canvas.getContext('2d').fillText('暂无数据', 10, 30); return; }
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth * 2;
+  const h = canvas.height = 300 * 2;
+  ctx.scale(2, 2);
+  const cw = canvas.offsetWidth, ch = 300;
+  ctx.clearRect(0, 0, cw, ch);
+
+  const maxRev = Math.max(...daily.map(d => d.revenue), 1);
+  const barW = Math.max(4, (cw - 60) / daily.length - 2);
+  const chartH = ch - 40;
+
+  daily.forEach((d, i) => {
+    const x = 40 + i * (barW + 2);
+    const barH = (d.revenue / maxRev) * chartH;
+    ctx.fillStyle = '#C9A96E';
+    ctx.fillRect(x, chartH - barH, barW, barH);
+  });
+
+  ctx.fillStyle = '#949494';
+  ctx.font = '11px sans-serif';
+  ctx.fillText(fenToYuan(maxRev) + '元', 0, 12);
+  if (daily.length > 0) {
+    ctx.fillText(daily[0].day, 40, ch - 10);
+    ctx.fillText(daily[daily.length - 1].day, cw - 80, ch - 10);
+  }
+}
+
+// --- Users ---
+async function loadUsers() {
+  const search = document.getElementById('userSearch').value;
+  const page = currentPage.users;
+  const data = await api(`/api/admin/users?page=${page}&search=${encodeURIComponent(search)}`);
+  const tbody = document.getElementById('usersBody');
+  tbody.innerHTML = data.items.map(u => `<tr>
+    <td>${u.id.slice(0,12)}</td><td>${u.nickname || '-'}</td><td>${u.phone || '-'}</td>
+    <td><span class="badge badge-${u.tier === 'free' ? 'free' : 'paid'}">${u.tier}</span></td>
+    <td>${fmtDate(u.tier_expires_at)}</td><td>${fmtDate(u.created_at)}</td>
+  </tr>`).join('');
+  renderPagination('usersPagination', page, Math.ceil(data.total / data.size), p => { currentPage.users = p; loadUsers(); });
+}
+
+// --- Orders ---
+async function loadOrders() {
+  const status = document.getElementById('orderStatusFilter').value;
+  const page = currentPage.orders;
+  const data = await api(`/api/admin/orders?page=${page}&status=${status}`);
+  const tbody = document.getElementById('ordersBody');
+  tbody.innerHTML = data.items.map(o => `<tr>
+    <td>${o.id}</td><td>${o.user_id.slice(0,12)}</td><td>${o.tier}</td>
+    <td>${fenToYuan(o.amount)}</td>
+    <td><span class="badge badge-${o.status === 'paid' ? 'paid' : 'pending'}">${o.status === 'paid' ? '已支付' : '待支付'}</span></td>
+    <td>${fmtDate(o.created_at)}</td>
+  </tr>`).join('');
+  renderPagination('ordersPagination', page, Math.ceil(data.total / data.size), p => { currentPage.orders = p; loadOrders(); });
+}
+
+// --- Analytics ---
+async function loadAnalytics() {
+  const funnel = await api('/api/admin/analytics/conversion');
+  const maxVal = Math.max(funnel.logins, 1);
+  const steps = [
+    { label: '登录', value: funnel.logins },
+    { label: '聊天', value: funnel.chats },
+    { label: '发起支付', value: funnel.payment_attempts },
+    { label: '支付成功', value: funnel.payment_complete },
+  ];
+  document.getElementById('conversionFunnel').innerHTML = steps.map(s =>
+    `<div class="funnel-step"><div class="funnel-label">${s.label}</div><div class="funnel-bar" style="width:${Math.max(5, s.value / maxVal * 100)}%">${s.value}</div></div>`
+  ).join('');
+
+  const retention = await api('/api/admin/analytics/retention');
+  document.getElementById('retentionBody').innerHTML = retention.map(r => {
+    const d7 = r.cohort_size > 0 ? (r.d7_active / r.cohort_size * 100).toFixed(1) : '0.0';
+    const d30 = r.cohort_size > 0 ? (r.d30_active / r.cohort_size * 100).toFixed(1) : '0.0';
+    return `<tr><td>${r.cohort_date}</td><td>${r.cohort_size}</td><td>${r.d7_active}</td><td>${d7}%</td><td>${r.d30_active}</td><td>${d30}%</td></tr>`;
+  }).join('');
+}
+
+// --- Messages ---
+async function loadMessages() {
+  const msgs = await api('/api/admin/messages/recent?limit=100');
+  document.getElementById('messagesBody').innerHTML = msgs.map(m =>
+    `<tr><td>${m.nickname || m.user_id.slice(0,8)}</td><td>${m.role === 'user' ? '用户' : 'AI'}</td><td style="max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.content}</td><td>S${m.stage}</td><td>${fmtDate(m.created_at)}</td></tr>`
+  ).join('');
+}
+
+// --- Feedback ---
+async function loadFeedback() {
+  const page = currentPage.feedback;
+  const data = await api(`/api/admin/feedback?page=${page}`);
+  document.getElementById('feedbackBody').innerHTML = data.items.map(f =>
+    `<tr><td>${f.nickname || f.user_id.slice(0,8)}</td><td>${'★'.repeat(f.rating)}</td><td>${f.content}</td><td>${f.status}</td><td>${fmtDate(f.created_at)}</td></tr>`
+  ).join('');
+  renderPagination('feedbackPagination', page, Math.ceil(data.total / data.size), p => { currentPage.feedback = p; loadFeedback(); });
+}
+
+// --- Pagination ---
+function renderPagination(containerId, current, totalPages, onClick) {
+  const c = document.getElementById(containerId);
+  if (totalPages <= 1) { c.innerHTML = ''; return; }
+  let html = `<button ${current <= 1 ? 'disabled' : ''} onclick="void(0)">上一页</button>`;
+  for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+    html += `<button class="${i === current ? 'active' : ''}" data-p="${i}">${i}</button>`;
+  }
+  html += `<button ${current >= totalPages ? 'disabled' : ''} data-p="${current + 1}">下一页</button>`;
+  c.innerHTML = html;
+  c.querySelectorAll('button[data-p]').forEach(btn => {
+    btn.addEventListener('click', () => onClick(parseInt(btn.dataset.p)));
+  });
+  const prev = c.querySelector('button:first-child');
+  if (prev && current > 1) prev.addEventListener('click', () => onClick(current - 1));
+  const next = c.querySelector('button:last-child');
+  if (next && current < totalPages) next.addEventListener('click', () => onClick(current + 1));
+}
+
+// --- Init ---
+if (TOKEN) {
+  document.getElementById('loginOverlay').classList.add('hidden');
+  loadDashboard();
+}
+</script>
+</body>
+</html>
