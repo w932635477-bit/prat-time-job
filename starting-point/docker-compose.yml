@@ -4,6 +4,9 @@ services:
     ports:
       - "8000:8000"
     env_file: .env
+    environment:
+      - SP_DATABASE_PATH=/app/data/starting_point.db
+      - SP_CORS_ORIGINS=["https://firesing.cn","https://www.firesing.cn"]
     volumes:
       - ./data:/app/data
     restart: unless-stopped
