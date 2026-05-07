@@ -1,1 +1,10 @@
 .coverage
+__pycache__/
+*.pyc
+*.db
+*.db-shm
+*.db-wal
+.env
+.playwright-cli/
+test-*.png
+.claude/skills/
