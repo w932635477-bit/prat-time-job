@@ -1,3 +1,4 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 from pathlib import Path
 
@@ -22,6 +23,14 @@ class Settings(BaseSettings):
     firecrawl_api_key: str = ""
 
     model_config = {"env_prefix": "SP_", "env_file": ".env"}
+
+    @model_validator(mode="after")
+    def _validate_production_secrets(self) -> "Settings":
+        if len(self.admin_password) < 8:
+            raise ValueError("SP_ADMIN_PASSWORD must be at least 8 characters")
+        if len(self.jwt_secret) < 16:
+            raise ValueError("SP_JWT_SECRET must be at least 16 characters")
+        return self
 
 
 settings = Settings()

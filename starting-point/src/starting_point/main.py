@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+from collections import defaultdict
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -70,6 +72,43 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(SecurityHeadersMiddleware)
+
+
+# In-memory rate limiter: sliding window per client IP
+_RATE_LIMITS: dict[str, list[float]] = defaultdict(list)
+_RATE_MAX_REQUESTS = 60
+_RATE_WINDOW_SECONDS = 60
+
+# Stricter limits for sensitive endpoints
+_STRICT_PATHS = {"/api/auth/login", "/api/auth/wechat/callback", "/api/payments/create", "/api/admin/login"}
+_STRICT_MAX_REQUESTS = 10
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        client_ip = request.client.host if request.client else "unknown"
+        path = request.url.path
+        now = time.monotonic()
+
+        max_req = _STRICT_MAX_REQUESTS if path in _STRICT_PATHS else _RATE_MAX_REQUESTS
+        window = _RATE_WINDOW_SECONDS
+
+        key = f"{client_ip}:{path}" if path in _STRICT_PATHS else client_ip
+        timestamps = _RATE_LIMITS[key]
+
+        # Prune entries outside the window
+        _RATE_LIMITS[key] = [t for t in timestamps if now - t < window]
+        timestamps = _RATE_LIMITS[key]
+
+        if len(timestamps) >= max_req:
+            raise HTTPException(status_code=429, detail="Too many requests")
+
+        _RATE_LIMITS[key].append(now)
+        response = await call_next(request)
+        return response
+
+
+app.add_middleware(RateLimitMiddleware)
 
 # Route registration
 from starting_point.auth.routes import router as auth_router
