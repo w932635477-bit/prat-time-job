@@ -6,6 +6,38 @@ var App = (function () {
 
   var USER_ID_KEY = 'sp_user_id';
   var currentView = 'landing';
+  var sessionReady = false;
+
+  // ---- User ID management ----
+
+  function getUserId() {
+    var id = localStorage.getItem(USER_ID_KEY);
+    if (!id) {
+      id = 'u_' + crypto.randomUUID();
+      localStorage.setItem(USER_ID_KEY, id);
+    }
+    return id;
+  }
+
+  // ---- Session management ----
+
+  function ensureSession(callback) {
+    fetch('/api/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: getUserId() }),
+    })
+      .then(function (resp) { return resp.json(); })
+      .then(function () {
+        sessionReady = true;
+        if (callback) callback();
+      })
+      .catch(function () {
+        // Session creation failed — allow limited access
+        sessionReady = true;
+        if (callback) callback();
+      });
+  }
 
   // ---- User ID management ----
 
@@ -107,9 +139,10 @@ var App = (function () {
   function init() {
     initLanding();
 
-    // Auto-start if user already has a session (refresh case)
-    var userId = getUserId();
-    checkExistingSession(userId);
+    // Create server session first, then check for existing conversation
+    ensureSession(function () {
+      checkExistingSession(getUserId());
+    });
   }
 
   function checkExistingSession(userId) {
@@ -143,7 +176,7 @@ var App = (function () {
             .then(function (state) {
               if (state && state.current_stage != null) {
                 showView('chat');
-                Chat.sendMessage(userId, '');
+                Chat.loadHistory(userId);
               }
             })
             .catch(function () {});

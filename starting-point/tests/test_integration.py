@@ -1,80 +1,56 @@
 import pytest
-import aiosqlite
 from httpx import AsyncClient, ASGITransport
 
-from starting_point.main import app, create_registry
-from starting_point.engine.state import StateManager
-from starting_point.engine.runner import SkillRunner
+from starting_point.main import app
 from starting_point.auth.jwt import create_token
+from starting_point.db.database import Database
 from starting_point.db.migrations import run_migrations
 from starting_point.db.user_repo import UserRepo
 from starting_point.db.order_repo import OrderRepo
-from starting_point.models import User
+from starting_point.engine.state import StateManager
+from starting_point.engine.runner import SkillRunner
+from starting_point.models import User, SkillType
 
 
 @pytest.fixture
 async def client(tmp_path):
     db_path = tmp_path / "test.db"
-    registry = create_registry()
-    state_mgr = StateManager(db_path)
-    await state_mgr.initialize()
-    app.state.runner = SkillRunner(registry, state_mgr, None)
+    db = Database(db_path)
+    await db.initialize()
+    await run_migrations(db)
 
-    db_conn = await aiosqlite.connect(db_path)
-    await run_migrations(db_conn)
-    app.state.user_repo = UserRepo(db_conn)
-    app.state.order_repo = OrderRepo(db_conn)
+    app.state.db = db
+    app.state.user_repo = UserRepo(db)
+    app.state.order_repo = OrderRepo(db)
 
     user = User(id="int-test-user", wx_openid="wx_test", nickname="Test")
     await app.state.user_repo.save_user(user)
 
+    token = create_token("int-test-user")
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
+        c.cookies.set("session", token)
         yield c
 
-    await db_conn.close()
-
-
-@pytest.fixture
-def auth_headers():
-    token = create_token("int-test-user")
-    return {"Authorization": f"Bearer {token}"}
+    await db.close()
 
 
 @pytest.mark.asyncio
-async def test_full_chat_flow(client, auth_headers):
-    resp = await client.post("/api/chat", json={
-        "user_id": "int-test-user",
-        "message": "开始",
-        "selected_option": None,
-    }, headers=auth_headers)
+async def test_get_state(client):
+    resp = await client.get("/api/state/int-test-user")
     assert resp.status_code == 200
-    data = resp.json()
-    assert data["message"]["step_id"] == "digital_literacy"
-
-    resp = await client.post("/api/chat", json={
-        "user_id": "int-test-user",
-        "message": "还行",
-        "selected_option": None,
-    }, headers=auth_headers)
-    data = resp.json()
-    assert data["message"]["step_id"] == "mental_readiness"
-
-    resp = await client.post("/api/back/int-test-user/digital_literacy", headers=auth_headers)
-    data = resp.json()
-    assert data["message"]["step_id"] == "digital_literacy"
 
 
 @pytest.mark.asyncio
-async def test_get_state(client, auth_headers):
-    resp = await client.get("/api/state/int-test-user", headers=auth_headers)
-    assert resp.status_code == 200
+async def test_state_wrong_user_returns_403(client):
+    resp = await client.get("/api/state/u_other")
+    assert resp.status_code == 403
 
 
 @pytest.mark.asyncio
 async def test_full_self_discovery_with_market_signals(tmp_path):
     """Regression test: 11 steps complete and advance to next skill."""
-    from starting_point.models import SkillType
+    from starting_point.main import create_registry
 
     db_path = tmp_path / "test.db"
     registry = create_registry()

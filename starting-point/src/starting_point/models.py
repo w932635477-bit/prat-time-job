@@ -59,7 +59,7 @@ class ChatRequest(BaseModel):
 
 
 class ChatResponse(BaseModel):
-    message: str = ""
+    message: str | ChatMessage = ""
     stage: int = 0
     stage_data: dict = Field(default_factory=dict)
     is_complete: bool = False

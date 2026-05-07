@@ -5,7 +5,12 @@ import asyncio
 import json
 import os
 
-from playwright.async_api import async_playwright, Page, Browser
+import pytest
+
+try:
+    from playwright.async_api import async_playwright, Page, Browser
+except ModuleNotFoundError:
+    pytestmark = pytest.mark.skip(reason="playwright not installed")
 
 BASE_URL = "http://127.0.0.1:8000"
 os.environ.setdefault("NO_PROXY", "127.0.0.1")

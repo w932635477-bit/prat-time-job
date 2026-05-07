@@ -5,7 +5,7 @@ import logging
 
 from starting_point.confidence.engine import ConfidenceEngine
 from starting_point.engine.skill_base import BaseSkill, StepResult
-from starting_point.llm.client import DeepSeekClient
+from starting_point.llm.client import LLMClient
 from starting_point.llm.prompts import PromptBuilder
 from starting_point.models import Step, StepOption, UserState
 
@@ -77,7 +77,7 @@ class SelfDiscoverySkill(BaseSkill):
         ),
     ]
 
-    def __init__(self, llm_client: DeepSeekClient | None = None) -> None:
+    def __init__(self, llm_client: LLMClient | None = None) -> None:
         self._confidence = ConfidenceEngine()
         self._llm = llm_client
         self._prompt_builder = PromptBuilder()
@@ -97,7 +97,7 @@ class SelfDiscoverySkill(BaseSkill):
             return StepResult(next_step=True, confidence_boost=boost)
 
         level = self._confidence.assess_from_answer(answer)
-        if level.value == "high":
+        if level == "high":
             return StepResult(
                 next_step=True,
                 confidence_boost=f"很好！你说的这些很具体，对正在装修的人来说非常有价值。",

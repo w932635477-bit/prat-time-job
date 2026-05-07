@@ -251,6 +251,31 @@ var Chat = (function () {
     if (sendBtn) sendBtn.disabled = disabled;
   }
 
+  // ---- Load chat history for session resume ----
+
+  function loadHistory(userId) {
+    fetch('/api/messages/' + encodeURIComponent(userId))
+      .then(function (resp) {
+        if (!resp.ok) return null;
+        return resp.json();
+      })
+      .then(function (data) {
+        if (!data || !data.messages) return;
+        var container = getMessagesContainer();
+        if (!container) return;
+
+        data.messages.forEach(function (msg) {
+          if (msg.role === 'user') {
+            container.appendChild(renderBubbleUser(msg.content));
+          } else if (msg.role === 'assistant') {
+            container.appendChild(renderBubbleAi(msg.content));
+          }
+        });
+        scrollToBottom();
+      })
+      .catch(function () {});
+  }
+
   // ---- Public API ----
 
   return {
@@ -258,5 +283,6 @@ var Chat = (function () {
     handleResponse: handleResponse,
     renderBubbleAi: renderBubbleAi,
     disableInput: disableInput,
+    loadHistory: loadHistory,
   };
 })();

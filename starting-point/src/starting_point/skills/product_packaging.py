@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 from starting_point.engine.skill_base import BaseSkill, StepResult
-from starting_point.llm.client import DeepSeekClient
+from starting_point.llm.client import LLMClient
 from starting_point.llm.prompts import PromptBuilder
 from starting_point.models import Step, StepOption, UserState
 
@@ -53,7 +53,7 @@ class ProductPackagingSkill(BaseSkill):
         ),
     ]
 
-    def __init__(self, llm_client: DeepSeekClient | None = None) -> None:
+    def __init__(self, llm_client: LLMClient | None = None) -> None:
         self._llm = llm_client
         self._prompt_builder = PromptBuilder()
 

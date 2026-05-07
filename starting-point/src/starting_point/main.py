@@ -5,10 +5,11 @@ from collections import defaultdict
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from starting_point.config import settings
@@ -17,11 +18,35 @@ from starting_point.db.migrations import run_migrations
 from starting_point.db.repos import MessageRepo, StateRepo, KitRepo
 from starting_point.db.user_repo import UserRepo
 from starting_point.db.order_repo import OrderRepo
+from starting_point.engine.registry import SkillRegistry
 from starting_point.llm.client import LLMClient
-from starting_point.models import ChatRequest, ChatResponse
+from starting_point.models import ChatRequest, ChatResponse, SkillType
 from starting_point.stages.engine import ConversationEngine
+from starting_point.skills.assessment import AssessmentSkill
+from starting_point.skills.self_discovery import SelfDiscoverySkill
+from starting_point.skills.product_packaging import ProductPackagingSkill
+from starting_point.skills.customer_acquisition import CustomerAcquisitionSkill
+from starting_point.skills.first_deal import FirstDealSkill
+from starting_point.skills.growth import GrowthSkill
+from starting_point.skills.plan_path import PlanPathSkill
+from starting_point.skills.take_action import TakeActionSkill
+from starting_point.skills.troubleshoot import TroubleshootSkill
 
 STATIC_DIR = Path(__file__).resolve().parent.parent.parent / "static"
+
+
+def create_registry() -> SkillRegistry:
+    """Create a SkillRegistry with all skill classes registered."""
+    registry = SkillRegistry()
+    registry.register(SkillType.ASSESSMENT, AssessmentSkill())
+    registry.register(SkillType.SELF_DISCOVERY, SelfDiscoverySkill())
+    registry.register(SkillType.PRODUCT_PACKAGING, ProductPackagingSkill())
+    registry.register(SkillType.CUSTOMER_ACQUISITION, CustomerAcquisitionSkill())
+    registry.register(SkillType.FIRST_DEAL, FirstDealSkill())
+    registry.register(SkillType.GROWTH, GrowthSkill())
+    registry.register(SkillType.PLAN_PATH, PlanPathSkill())
+    registry.register(SkillType.TROUBLESHOOT, TroubleshootSkill())
+    return registry
 
 
 @asynccontextmanager
@@ -122,8 +147,56 @@ app.include_router(user_router)
 app.include_router(admin_router)
 
 
+# ---- Session auth ----
+
+class SessionRequest(BaseModel):
+    user_id: str = Field(min_length=1, max_length=64)
+
+
+def _get_session_user_id(request: Request) -> str:
+    """Verify JWT session cookie and return authenticated user_id."""
+    from starting_point.auth.jwt import decode_token
+    token = request.cookies.get("session")
+    if not token:
+        raise HTTPException(status_code=401, detail="No session")
+    payload = decode_token(token)
+    if payload is None:
+        raise HTTPException(status_code=401, detail="Invalid session")
+    return payload.get("sub", "")
+
+
+@app.post("/api/session")
+async def create_session(req: SessionRequest, response: JSONResponse):
+    """Issue a JWT session cookie for a user_id. Called once on first visit."""
+    from starting_point.auth.jwt import create_token
+    token = create_token(req.user_id)
+    resp = JSONResponse({"ok": True, "user_id": req.user_id})
+    resp.set_cookie(
+        "session",
+        token,
+        httponly=True,
+        max_age=settings.jwt_expiry_hours * 3600,
+        samesite="lax",
+    )
+    return resp
+
+
+@app.get("/api/session")
+async def check_session(request: Request):
+    """Check if current session is valid. Returns user_id if authenticated."""
+    try:
+        user_id = _get_session_user_id(request)
+        return {"authenticated": True, "user_id": user_id}
+    except HTTPException:
+        return {"authenticated": False, "user_id": None}
+
+
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest, request: Request) -> ChatResponse:
+    session_user_id = _get_session_user_id(request)
+    if session_user_id != req.user_id:
+        raise HTTPException(status_code=403, detail="User ID mismatch")
+
     engine: ConversationEngine = request.app.state.engine
     from starting_point.admin.events import track_event
     await track_event(request.app.state.db, req.user_id, "chat_message")
@@ -143,6 +216,9 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
 
 @app.get("/api/kit/{user_id}")
 async def get_kit(user_id: str, request: Request):
+    session_user_id = _get_session_user_id(request)
+    if session_user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     db: Database = request.app.state.db
     kit_repo = KitRepo(db)
     kit = await kit_repo.load_by_user(user_id)
@@ -153,6 +229,9 @@ async def get_kit(user_id: str, request: Request):
 
 @app.get("/api/kit-status/{user_id}")
 async def kit_status(user_id: str, request: Request):
+    session_user_id = _get_session_user_id(request)
+    if session_user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     db: Database = request.app.state.db
     kit_repo = KitRepo(db)
     kit = await kit_repo.load_by_user(user_id)
@@ -163,12 +242,30 @@ async def kit_status(user_id: str, request: Request):
 
 @app.get("/api/state/{user_id}")
 async def get_state(user_id: str, request: Request):
+    session_user_id = _get_session_user_id(request)
+    if session_user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     db: Database = request.app.state.db
     state_repo = StateRepo(db)
     state = await state_repo.load(user_id)
     if state is None:
         return {"current_stage": None}
     return state
+
+
+@app.get("/api/messages/{user_id}")
+async def get_messages(user_id: str, request: Request, stage: int = -1):
+    session_user_id = _get_session_user_id(request)
+    if session_user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    db: Database = request.app.state.db
+    msg_repo = MessageRepo(db)
+    if stage < 0:
+        state_repo = StateRepo(db)
+        state = await state_repo.load(user_id)
+        stage = state["current_stage"] if state else 0
+    messages = await msg_repo.load(user_id, stage)
+    return {"messages": messages, "stage": stage}
 
 
 @app.get("/")

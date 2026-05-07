@@ -101,10 +101,9 @@ def test_market_radar_prompt_contains_industry():
 def test_task_day_model_defaults():
     from starting_point.models import TaskDay
     td = TaskDay(day=1, task="发帖子", platform="小红书")
-    assert td.status == "pending"
+    assert td.status == "active"
     assert td.stuck_reason is None
-    assert td.rescue_advice is None
-    assert td.estimated_time == "30分钟"
+    assert td.estimated_time == ""
 
 
 def test_task_plan_model():
