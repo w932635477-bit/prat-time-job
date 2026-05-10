@@ -227,6 +227,21 @@ class UserState(BaseModel):
     task_plan: TaskPlan | None = None
     assessment: UserAssessment | None = None
     asset_map: AssetMap | None = None
+    recommended_creators: list[int] = Field(default_factory=list)
+
+
+class CreatorExample(BaseModel):
+    id: int
+    account_name: str
+    douyin_id: str = ""
+    category: str
+    sub_category: str = ""
+    follower_tier: str = ""
+    monetization_methods: list[str] = Field(default_factory=list)
+    origin_story: str = ""
+    user_profile_tags: list[str] = Field(default_factory=list)
+    content_style: str = ""
+    is_active: bool = True
 
 
 # Aliases for backward compatibility with tests

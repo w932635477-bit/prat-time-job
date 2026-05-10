@@ -33,7 +33,7 @@ class StageZeroHandler:
         self._msg_repo = msg_repo
         self._state_repo = state_repo
 
-    async def handle(self, user_id: str, message: str) -> ChatResponse:
+    async def handle(self, user_id: str, message: str, creator_context: str = "") -> ChatResponse:
         # Save user message
         await self._msg_repo.save(user_id, "user", message, stage=0)
 
@@ -61,6 +61,8 @@ class StageZeroHandler:
 
         # Determine if force-extract mode
         system_prompt = SYSTEM_PROMPT
+        if creator_context:
+            system_prompt += creator_context
         if user_msg_count >= MAX_STAGE0_MESSAGES:
             system_prompt += FORCE_EXTRACT_SUFFIX
             stage_data = {

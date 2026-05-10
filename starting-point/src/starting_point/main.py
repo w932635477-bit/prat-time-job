@@ -18,6 +18,7 @@ from starting_point.db.migrations import run_migrations
 from starting_point.db.repos import MessageRepo, StateRepo, KitRepo
 from starting_point.db.user_repo import UserRepo
 from starting_point.db.order_repo import OrderRepo
+from starting_point.db.creator_repo import CreatorRepo
 from starting_point.engine.registry import SkillRegistry
 from starting_point.llm.client import LLMClient
 from starting_point.models import ChatRequest, ChatResponse, SkillType
@@ -65,12 +66,16 @@ async def lifespan(app: FastAPI):
     kit_repo = KitRepo(db)
     user_repo = UserRepo(db)
     order_repo = OrderRepo(db)
+    creator_repo = CreatorRepo(db.conn())
 
-    app.state.engine = ConversationEngine(llm, msg_repo, state_repo, kit_repo)
+    app.state.engine = ConversationEngine(
+        llm, msg_repo, state_repo, kit_repo, creator_repo,
+    )
     app.state.db = db
     app.state.llm = llm
     app.state.user_repo = user_repo
     app.state.order_repo = order_repo
+    app.state.creator_repo = creator_repo
     yield
     await llm.close()
     await db.close()

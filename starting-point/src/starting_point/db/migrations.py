@@ -78,5 +78,22 @@ async def run_migrations(db: object) -> None:
         -- Migrate legacy low_ticket tier to standard
         UPDATE users SET tier = 'standard' WHERE tier = 'low_ticket';
         UPDATE orders SET tier = 'standard' WHERE tier = 'low_ticket';
+
+        CREATE TABLE IF NOT EXISTS creator_examples (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            account_name TEXT NOT NULL,
+            douyin_id TEXT NOT NULL DEFAULT '',
+            category TEXT NOT NULL,
+            sub_category TEXT NOT NULL DEFAULT '',
+            follower_tier TEXT NOT NULL DEFAULT '',
+            monetization_methods TEXT NOT NULL DEFAULT '[]',
+            origin_story TEXT NOT NULL DEFAULT '',
+            user_profile_tags TEXT NOT NULL DEFAULT '[]',
+            content_style TEXT NOT NULL DEFAULT '',
+            is_active INTEGER NOT NULL DEFAULT 1,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_creators_category ON creator_examples(category);
     """)
     await conn.commit()

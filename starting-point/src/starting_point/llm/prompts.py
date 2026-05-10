@@ -413,3 +413,32 @@ class PromptBuilder:
         return self.MARKET_RADAR_TEMPLATE.format(
             industry=industry, assets=assets, market_signals=market_signals,
         )
+
+    CREATOR_CONTEXT_TEMPLATE = """
+【同行参考】
+以下是和用户情况类似的抖音创作者，请在对话中自然地提到他们，帮助用户建立信心。不要生硬地列出清单，而是像朋友聊天一样提到"有个跟你差不多的人，你可以看看他是怎么做的"。
+
+推荐创作者：
+{creator_profiles}
+
+推荐要求：
+1. 用大白话解释这个创作者是怎么赚钱的
+2. 强调他和用户的相似之处
+3. 如果用户问"我能做吗"，给一个具体的、门槛很低的第一步
+4. 不要一次推荐太多，一次提1-2个就好
+"""
+
+    def build_creator_context(self, creators: list) -> str:
+        if not creators:
+            return ""
+        profiles = []
+        for c in creators:
+            methods = "、".join(c.monetization_methods)
+            tags = "、".join(c.user_profile_tags)
+            profiles.append(
+                f"- {c.account_name}（{c.follower_tier}）：{c.category}行业，"
+                f"变现方式：{methods}。{c.origin_story}。适合人群：{tags}"
+            )
+        return self.CREATOR_CONTEXT_TEMPLATE.format(
+            creator_profiles="\n".join(profiles),
+        )

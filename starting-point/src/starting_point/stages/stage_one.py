@@ -31,7 +31,7 @@ class StageOneHandler:
         self._msg_repo = msg_repo
         self._state_repo = state_repo
 
-    async def handle(self, user_id: str, message: str) -> ChatResponse:
+    async def handle(self, user_id: str, message: str, creator_context: str = "") -> ChatResponse:
         await self._msg_repo.save(user_id, "user", message, stage=1)
 
         state = await self._state_repo.load(user_id)
@@ -41,6 +41,8 @@ class StageOneHandler:
         # Build context with knowledge points
         kp_context = f"已识别的可变现知识点:\n{json.dumps(kps, ensure_ascii=False, indent=2)}\n\n"
         system_prompt = SYSTEM_PROMPT + kp_context
+        if creator_context:
+            system_prompt += creator_context
 
         history = await self._msg_repo.load(user_id, stage=1)
         llm_messages = [{"role": h["role"], "content": h["content"]} for h in history]
