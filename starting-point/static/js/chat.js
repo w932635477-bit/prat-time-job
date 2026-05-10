@@ -198,16 +198,11 @@ var Chat = (function () {
   function handleResponse(data) {
     var messages = getMessagesContainer();
 
-    // Update progress bar and stage label
+    // Update step bar and stage label
     if (typeof App !== 'undefined' && App.updateProgress) {
       var stage = (typeof data.stage === 'number') ? data.stage : 0;
       var progress = (typeof data.progress === 'number') ? data.progress : 0;
       App.updateProgress(stage, progress);
-
-      // Hide roadmap after first real response
-      if (data.message) {
-        App.hideRoadmap();
-      }
     }
 
     // Render the AI message text
@@ -261,6 +256,7 @@ var Chat = (function () {
     var sendBtn = document.getElementById('sendBtn');
     if (input) input.disabled = disabled;
     if (sendBtn) sendBtn.disabled = disabled;
+    if (!disabled && input) input.focus();
   }
 
   // ---- Load chat history for session resume ----

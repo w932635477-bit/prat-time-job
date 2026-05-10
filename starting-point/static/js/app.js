@@ -9,6 +9,11 @@ var App = (function () {
   var sessionReady = false;
 
   var STAGE_NAMES = ['经验评估', '产品包装', '启动套件'];
+  var STAGE_DESCS = [
+    '找到你经验里最值钱的部分',
+    '把经验变成可以卖的产品',
+    '拿到可以直接用的素材'
+  ];
   var STAGE_TOTAL = STAGE_NAMES.length;
 
   // ---- User ID management ----
@@ -60,47 +65,33 @@ var App = (function () {
   // ---- Progress / Stage UI ----
 
   function updateProgress(stage, progress) {
-    var fill = document.getElementById('progressFill');
+    var fill = document.getElementById('stepBarFill');
+    var desc = document.getElementById('stepDesc');
     var label = document.getElementById('stageLabel');
-    if (!fill || !label) return;
+    if (!fill) return;
 
     var pct = Math.min(100, Math.max(0, (stage + (progress || 0)) / STAGE_TOTAL * 100));
     fill.style.width = pct + '%';
-    label.textContent = STAGE_NAMES[stage] || '';
-  }
+    if (label) label.textContent = STAGE_NAMES[stage] || '';
+    if (desc) desc.textContent = STAGE_DESCS[stage] || '';
 
-  function showRoadmap(currentStage) {
-    var roadmap = document.getElementById('stageRoadmap');
-    if (!roadmap) return;
-
-    var steps = roadmap.querySelectorAll('.stage-roadmap__step');
-    steps.forEach(function (step) {
-      var s = parseInt(step.getAttribute('data-stage'), 10);
-      var dot = step.querySelector('.stage-roadmap__dot');
-      if (!dot) return;
-
-      dot.className = 'stage-roadmap__dot';
-      if (s < currentStage) {
-        dot.classList.add('stage-roadmap__dot--completed');
-        step.classList.remove('stage-roadmap__step--dimmed');
-      } else if (s === currentStage) {
-        dot.classList.add('stage-roadmap__dot--current');
-        step.classList.remove('stage-roadmap__step--dimmed');
+    for (var i = 0; i < STAGE_TOTAL; i++) {
+      var stepEl = document.getElementById('step' + i);
+      if (!stepEl) continue;
+      stepEl.className = 'step-bar__step';
+      if (i < stage) {
+        stepEl.classList.add('step-bar__step--completed');
+      } else if (i === stage) {
+        stepEl.classList.add('step-bar__step--active');
       } else {
-        dot.classList.add('stage-roadmap__dot--future');
-        step.classList.add('stage-roadmap__step--dimmed');
+        stepEl.classList.add('step-bar__step--future');
       }
-    });
-
-    roadmap.style.display = 'block';
-    setTimeout(function () {
-      roadmap.style.display = 'none';
-    }, 4000);
+    }
   }
 
   function hideRoadmap() {
-    var roadmap = document.getElementById('stageRoadmap');
-    if (roadmap) roadmap.style.display = 'none';
+    var stepBar = document.getElementById('stepBar');
+    if (stepBar) stepBar.style.display = 'none';
   }
 
   // ---- Init landing ----
@@ -120,7 +111,6 @@ var App = (function () {
     showView('chat');
     initChatInput();
     updateProgress(0, 0);
-    showRoadmap(0);
 
     var messages = document.getElementById('chat-messages');
     if (!messages) return;
@@ -134,7 +124,6 @@ var App = (function () {
     showView('chat');
     initChatInput();
     updateProgress(stage, 0);
-    showRoadmap(stage);
   }
 
   // ---- Init chat input ----

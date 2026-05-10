@@ -67,7 +67,7 @@
 
 .chat-v4__messages {
   padding: var(--sp-4) var(--page-padding);
-  padding-top: calc(var(--header-height) + 2px + var(--sp-4));
+  padding-top: calc(var(--header-height) + 1px + 80px + var(--sp-4));
   padding-bottom: calc(var(--input-height) + var(--sp-3) + var(--safe-bottom) + var(--sp-3));
   max-width: var(--max-width);
   margin: 0 auto;
@@ -75,82 +75,117 @@
   flex-direction: column;
 }
 
-/* ---- Stage Roadmap ---- */
+/* ---- Persistent Step Bar ---- */
 
-.stage-roadmap {
-  padding: var(--sp-5) var(--page-padding);
-  padding-top: calc(var(--header-height) + 2px + var(--sp-3) + var(--sp-4));
-  max-width: var(--max-width);
-  margin: 0 auto;
+.step-bar {
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  right: 0;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--divider);
+  padding: var(--sp-3) var(--page-padding) var(--sp-2);
+  z-index: 100;
 }
 
-.stage-roadmap__title {
-  font: var(--t-caption);
-  color: var(--gold);
-  letter-spacing: 0.15em;
-  margin-bottom: var(--sp-4);
+.step-bar__track {
+  height: 3px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  margin-bottom: var(--sp-3);
+  overflow: hidden;
 }
 
-.stage-roadmap__steps {
+.step-bar__fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 2px;
+  transition: width 400ms ease-in-out;
+  width: 0%;
+}
+
+.step-bar__steps {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.step-bar__step {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
+  align-items: center;
+  gap: 4px;
+  flex: 1;
 }
 
-.stage-roadmap__step {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--sp-3);
-}
-
-.stage-roadmap__dot {
-  width: 24px;
-  height: 24px;
+.step-bar__dot {
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  flex-shrink: 0;
+  border: 2px solid var(--border);
+  background: var(--bg-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  transition: all var(--transition-normal);
+  flex-shrink: 0;
 }
 
-.stage-roadmap__dot--completed {
+.step-bar__label {
+  font: var(--t-micro);
+  color: var(--text-tertiary);
+  text-align: center;
+  transition: color var(--transition-normal);
+  white-space: nowrap;
+}
+
+/* Completed step */
+.step-bar__step--completed .step-bar__dot {
   background: var(--gold);
+  border-color: var(--gold);
   color: var(--bg-primary);
 }
 
-.stage-roadmap__dot--completed::after {
+.step-bar__step--completed .step-bar__dot::after {
   content: '\2713';
-  font-weight: 700;
+  font-size: 11px;
 }
 
-.stage-roadmap__dot--current {
+.step-bar__step--completed .step-bar__label {
+  color: var(--gold);
+}
+
+/* Active (current) step */
+.step-bar__step--active .step-bar__dot {
   background: var(--gold-subtle);
-  border: 2px solid var(--gold);
-  box-shadow: 0 0 0 4px rgba(201, 169, 110, 0.12);
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.15);
 }
 
-.stage-roadmap__dot--future {
-  background: var(--bg-tertiary);
-  border: 2px solid var(--border);
-}
-
-.stage-roadmap__name {
-  font: var(--t-body-sm);
+.step-bar__step--active .step-bar__label {
+  color: var(--gold);
   font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 2px;
 }
 
-.stage-roadmap__desc {
+/* Future step */
+.step-bar__step--future .step-bar__dot {
+  background: var(--bg-tertiary);
+  border-color: var(--border);
+}
+
+.step-bar__step--future .step-bar__label {
+  color: var(--text-tertiary);
+}
+
+/* Current step description */
+.step-bar__desc {
   font: var(--t-caption);
   color: var(--text-secondary);
-}
-
-.stage-roadmap__step--dimmed .stage-roadmap__name,
-.stage-roadmap__step--dimmed .stage-roadmap__desc {
-  opacity: 0.5;
+  text-align: center;
+  margin-top: var(--sp-2);
+  transition: opacity var(--transition-normal);
 }
 
 /* ---- Stage transition animation ---- */
