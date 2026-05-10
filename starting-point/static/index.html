@@ -38,7 +38,41 @@
     <!-- Header -->
     <header class="app-header">
       <span class="app-header__title">启点</span>
+      <span class="app-header__step" id="stageLabel"></span>
     </header>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar">
+      <div class="progress-bar__fill" id="progressFill" style="width: 0%"></div>
+    </div>
+
+    <!-- Stage Roadmap (shown on first chat open) -->
+    <div id="stageRoadmap" class="stage-roadmap fade-in" style="display:none">
+      <div class="stage-roadmap__title">你的路线</div>
+      <div class="stage-roadmap__steps">
+        <div class="stage-roadmap__step" data-stage="0">
+          <div class="stage-roadmap__dot stage-roadmap__dot--current"></div>
+          <div>
+            <div class="stage-roadmap__name">经验评估</div>
+            <div class="stage-roadmap__desc">找到你经验里最值钱的部分</div>
+          </div>
+        </div>
+        <div class="stage-roadmap__step" data-stage="1">
+          <div class="stage-roadmap__dot stage-roadmap__dot--future"></div>
+          <div>
+            <div class="stage-roadmap__name">产品包装</div>
+            <div class="stage-roadmap__desc">把经验变成可以卖的产品</div>
+          </div>
+        </div>
+        <div class="stage-roadmap__step" data-stage="2">
+          <div class="stage-roadmap__dot stage-roadmap__dot--future"></div>
+          <div>
+            <div class="stage-roadmap__name">启动套件</div>
+            <div class="stage-roadmap__desc">拿到可以直接用的素材</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Messages -->
     <div id="chat-messages" class="chat-v4__messages" role="log" aria-label="对话内容">

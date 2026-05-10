@@ -32,7 +32,11 @@ from starting_point.skills.plan_path import PlanPathSkill
 from starting_point.skills.take_action import TakeActionSkill
 from starting_point.skills.troubleshoot import TroubleshootSkill
 
-STATIC_DIR = Path(__file__).resolve().parent.parent.parent / "static"
+STATIC_DIR = (
+    settings.static_dir
+    if str(settings.static_dir)
+    else Path(__file__).resolve().parent.parent.parent / "static"
+)
 
 
 def create_registry() -> SkillRegistry:

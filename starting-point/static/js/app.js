@@ -8,6 +8,9 @@ var App = (function () {
   var currentView = 'landing';
   var sessionReady = false;
 
+  var STAGE_NAMES = ['经验评估', '产品包装', '启动套件'];
+  var STAGE_TOTAL = STAGE_NAMES.length;
+
   // ---- User ID management ----
 
   function getUserId() {
@@ -33,21 +36,9 @@ var App = (function () {
         if (callback) callback();
       })
       .catch(function () {
-        // Session creation failed — allow limited access
         sessionReady = true;
         if (callback) callback();
       });
-  }
-
-  // ---- User ID management ----
-
-  function getUserId() {
-    var id = localStorage.getItem(USER_ID_KEY);
-    if (!id) {
-      id = 'u_' + crypto.randomUUID();
-      localStorage.setItem(USER_ID_KEY, id);
-    }
-    return id;
   }
 
   // ---- View switching ----
@@ -66,6 +57,52 @@ var App = (function () {
     currentView = viewName;
   }
 
+  // ---- Progress / Stage UI ----
+
+  function updateProgress(stage, progress) {
+    var fill = document.getElementById('progressFill');
+    var label = document.getElementById('stageLabel');
+    if (!fill || !label) return;
+
+    var pct = Math.min(100, Math.max(0, (stage + (progress || 0)) / STAGE_TOTAL * 100));
+    fill.style.width = pct + '%';
+    label.textContent = STAGE_NAMES[stage] || '';
+  }
+
+  function showRoadmap(currentStage) {
+    var roadmap = document.getElementById('stageRoadmap');
+    if (!roadmap) return;
+
+    var steps = roadmap.querySelectorAll('.stage-roadmap__step');
+    steps.forEach(function (step) {
+      var s = parseInt(step.getAttribute('data-stage'), 10);
+      var dot = step.querySelector('.stage-roadmap__dot');
+      if (!dot) return;
+
+      dot.className = 'stage-roadmap__dot';
+      if (s < currentStage) {
+        dot.classList.add('stage-roadmap__dot--completed');
+        step.classList.remove('stage-roadmap__step--dimmed');
+      } else if (s === currentStage) {
+        dot.classList.add('stage-roadmap__dot--current');
+        step.classList.remove('stage-roadmap__step--dimmed');
+      } else {
+        dot.classList.add('stage-roadmap__dot--future');
+        step.classList.add('stage-roadmap__step--dimmed');
+      }
+    });
+
+    roadmap.style.display = 'block';
+    setTimeout(function () {
+      roadmap.style.display = 'none';
+    }, 4000);
+  }
+
+  function hideRoadmap() {
+    var roadmap = document.getElementById('stageRoadmap');
+    if (roadmap) roadmap.style.display = 'none';
+  }
+
   // ---- Init landing ----
 
   function initLanding() {
@@ -82,12 +119,22 @@ var App = (function () {
   function startChat() {
     showView('chat');
     initChatInput();
+    updateProgress(0, 0);
+    showRoadmap(0);
 
     var messages = document.getElementById('chat-messages');
     if (!messages) return;
 
-    // Send initial greeting to kick off Stage 0
     Chat.sendMessage(getUserId(), '你好，我想看看我的经验能值多少钱');
+  }
+
+  // ---- Resume chat ----
+
+  function resumeChat(stage) {
+    showView('chat');
+    initChatInput();
+    updateProgress(stage, 0);
+    showRoadmap(stage);
   }
 
   // ---- Init chat input ----
@@ -127,7 +174,6 @@ var App = (function () {
   // ---- Stage 1 complete -> switch to kit view ----
 
   function onStageOneComplete(data) {
-    // Delay slightly so user sees the "generating kit" message
     setTimeout(function () {
       showView('kit');
       Kit.loadKit(getUserId());
@@ -139,7 +185,6 @@ var App = (function () {
   function init() {
     initLanding();
 
-    // Create server session first, then check for existing conversation
     ensureSession(function () {
       checkExistingSession(getUserId());
     });
@@ -155,9 +200,9 @@ var App = (function () {
         if (!data) return;
 
         if (data.status === 'completed') {
-          // User has a kit, go directly to kit view
           showView('kit');
-          Kit.renderKit = Kit.renderKit; // ensure loaded
+          updateProgress(2, 1);
+          Kit.renderKit = Kit.renderKit;
           fetch('/api/kit/' + encodeURIComponent(userId))
             .then(function (r) { return r.json(); })
             .then(function (kit) {
@@ -167,7 +212,6 @@ var App = (function () {
         }
 
         if (data.status === 'pending' || data.status === 'not_found') {
-          // Check conversation state — user may be mid-conversation
           fetch('/api/state/' + encodeURIComponent(userId))
             .then(function (r) {
               if (!r.ok) return null;
@@ -175,7 +219,8 @@ var App = (function () {
             })
             .then(function (state) {
               if (state && state.current_stage != null) {
-                showView('chat');
+                var stage = state.current_stage || 0;
+                resumeChat(stage);
                 Chat.loadHistory(userId);
               }
             })
@@ -193,6 +238,8 @@ var App = (function () {
     init: init,
     onStageOneComplete: onStageOneComplete,
     getUserId: getUserId,
+    updateProgress: updateProgress,
+    hideRoadmap: hideRoadmap,
   };
 })();
 

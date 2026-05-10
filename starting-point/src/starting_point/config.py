@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     wx_pay_notify_url: str = ""
     admin_password: str = "changeme"
     firecrawl_api_key: str = ""
+    static_dir: Path = Path("")
 
     model_config = {"env_prefix": "SP_", "env_file": ".env"}
 
