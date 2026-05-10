@@ -25,7 +25,7 @@ def extract_bearer(request: Request) -> str | None:
 
 
 def get_token(request: Request) -> str:
-    token = request.cookies.get("token") or extract_bearer(request)
+    token = request.cookies.get("token") or request.cookies.get("session") or extract_bearer(request)
     if not token:
         raise HTTPException(401, "Not authenticated")
     return token
