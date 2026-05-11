@@ -56,22 +56,158 @@
       color: var(--text-tertiary);
       font: var(--t-caption);
     }
+    .login-page__qr {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--sp-4);
+    }
+    .login-page__qr img {
+      border-radius: 8px;
+      width: 200px;
+      height: 200px;
+    }
+    .login-page__qr-status {
+      color: var(--text-secondary);
+      font: var(--t-caption);
+    }
+    .login-page__divider {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      width: 100%;
+      max-width: 320px;
+      margin: var(--sp-6) 0;
+      color: var(--text-tertiary);
+      font: var(--t-caption);
+    }
+    .login-page__divider::before,
+    .login-page__divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
   </style>
 </head>
 <body class="dark-bg">
   <div class="login-page">
     <div class="login-page__logo">启点</div>
     <p class="login-page__subtitle">陪你赚到第一块钱</p>
-    <button class="login-page__btn" onclick="loginWithWechat()">
-      <svg class="login-page__btn-icon" viewBox="0 0 24 24"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 0 1 .598.082l1.584.926a.272.272 0 0 0 .14.047c.134 0 .24-.111.24-.247 0-.06-.023-.12-.038-.177l-.327-1.233a.582.582 0 0 1-.023-.156.49.49 0 0 1 .201-.398C23.024 18.48 24 16.82 24 14.98c0-3.21-2.931-5.837-7.062-6.122zM14.033 13.33c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.97-.982zm4.844 0c.535 0 .969.44.969.982a.976.976 0 0 1-.97.983.976.976 0 0 1-.968-.983c0-.542.434-.982.969-.982z"/></svg>
-      微信登录
-    </button>
+
+    <!-- WeChat OAuth button (shown in WeChat browser or mobile) -->
+    <div id="login-oauth">
+      <button class="login-page__btn" onclick="loginWithWechat()">
+        <svg class="login-page__btn-icon" viewBox="0 0 24 24"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 0 1 .598.082l1.584.926a.272.272 0 0 0 .14.047c.134 0 .24-.111.24-.247 0-.06-.023-.12-.038-.177l-.327-1.233a.582.582 0 0 1-.023-.156.49.49 0 0 1 .201-.398C23.024 18.48 24 16.82 24 14.98c0-3.21-2.931-5.837-7.062-6.122zM14.033 13.33c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.97-.982zm4.844 0c.535 0 .969.44.969.982a.976.976 0 0 1-.97.983.976.976 0 0 1-.968-.983c0-.542.434-.982.969-.982z"/></svg>
+        微信登录
+      </button>
+    </div>
+
+    <!-- QR code login (shown on desktop) -->
+    <div id="login-qrcode" class="login-page__qr">
+      <img id="qr-image" src="" alt="扫码登录">
+      <p class="login-page__qr-status" id="qr-status">请使用微信扫描二维码登录</p>
+    </div>
+
+    <div id="login-divider" class="login-page__divider" style="display:none;">或</div>
+
     <p class="login-page__note">登录即代表同意《用户协议》和《隐私政策》</p>
   </div>
+
   <script>
+    function isWechatBrowser() {
+      return /MicroMessenger/i.test(navigator.userAgent);
+    }
+    function isMobile() {
+      return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    }
+
     function loginWithWechat() {
       window.location.href = '/api/auth/wechat/login';
     }
+
+    function initLogin() {
+      var oauthEl = document.getElementById('login-oauth');
+      var qrEl = document.getElementById('login-qrcode');
+      var dividerEl = document.getElementById('login-divider');
+
+      if (isWechatBrowser()) {
+        // WeChat browser: show OAuth button only
+        return;
+      }
+
+      if (isMobile()) {
+        // Mobile non-WeChat: redirect to OAuth (may show error if not configured)
+        return;
+      }
+
+      // Desktop: show QR code login
+      showQrLogin(oauthEl, qrEl, dividerEl);
+    }
+
+    function showQrLogin(oauthEl, qrEl, dividerEl) {
+      fetch('/api/auth/qr-login/init')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.qr_url) return;
+
+          document.getElementById('qr-image').src = data.qr_url;
+          qrEl.style.display = 'flex';
+          dividerEl.style.display = 'flex';
+
+          // Start polling
+          pollQrStatus(data.token);
+        })
+        .catch(function (err) {
+          console.error('QR code error:', err);
+        });
+    }
+
+    function pollQrStatus(token) {
+      var maxAttempts = 90;
+      var attempts = 0;
+
+      function poll() {
+        if (attempts >= maxAttempts) {
+          document.getElementById('qr-status').textContent = '二维码已过期，请刷新页面';
+          return;
+        }
+        attempts++;
+
+        fetch('/api/auth/qr-login/status?token=' + encodeURIComponent(token))
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.status === 'confirmed' && data.user_id) {
+              document.getElementById('qr-status').textContent = '登录成功，正在跳转...';
+              localStorage.setItem('sp_user_id', data.user_id);
+              localStorage.setItem('sp_auth', 'wechat');
+              fetch('/api/session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: data.user_id }),
+              })
+              .then(function (resp) {
+                if (!resp.ok) throw new Error('Session creation failed');
+                window.location.href = '/';
+              })
+              .catch(function () {
+                window.location.href = '/';
+              });
+            } else if (data.status === 'expired') {
+              document.getElementById('qr-status').textContent = '二维码已过期，请刷新页面';
+            } else {
+              setTimeout(poll, 2000);
+            }
+          })
+          .catch(function () {
+            setTimeout(poll, 2000);
+          });
+      }
+
+      setTimeout(poll, 2000);
+    }
+
+    document.addEventListener('DOMContentLoaded', initLogin);
   </script>
 </body>
 </html>

@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from starting_point.llm.client import LLMClient
 from starting_point.db.repos import MessageRepo, StateRepo
-from starting_point.models import ProductPackage, ChatResponse
+from starting_point.models import ProductPackage, ChatResponse, NextStep
 from starting_point.prompts.stage_one import SYSTEM_PROMPT
 from starting_point.utils.json import extract_json
 
@@ -68,6 +68,11 @@ class StageOneHandler:
                     stage=2,
                     stage_data=new_stage_data,
                     is_complete=True,
+                    next_step=NextStep(
+                        title="生成你的启动套件",
+                        description="你的产品已经包装完成！下一步是生成完整的启动套件 — 包含话术模板、发布计划和行动清单。",
+                        auto_prompt="生成我的启动套件",
+                    ),
                 )
             except ValidationError:
                 logger.warning("Stage 1 product package validation failed")

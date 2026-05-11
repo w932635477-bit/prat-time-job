@@ -104,6 +104,63 @@ var Chat = (function () {
 
   // ---- Stage 1 result: product package ----
 
+  function renderLoginCard() {
+    var container = document.createElement('div');
+    container.className = 'login-card fade-in';
+
+    var isWechat = /MicroMessenger/i.test(navigator.userAgent);
+    var pageUrl = window.location.href.split('?')[0];
+
+    if (isWechat) {
+      container.innerHTML =
+        '<div class="login-card__icon">' +
+          '<svg viewBox="0 0 32 32" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5">' +
+            '<path d="M16 8a4 4 0 100 8 4 4 0 000-8z"/>' +
+            '<path d="M4 28c0-6.627 5.373-12 12-12s12 5.373 12 12"/>' +
+          '</svg>' +
+        '</div>' +
+        '<div class="login-card__title">登录以生成启动套件</div>' +
+        '<div class="login-card__desc">你的产品方案已就绪，微信登录后即可生成完整的启动套件。</div>' +
+        '<a href="/api/auth/wechat/login" class="login-card__btn">微信登录</a>';
+    } else {
+      container.innerHTML =
+        '<div class="login-card__title">登录以生成启动套件</div>' +
+        '<div class="login-card__desc">你的产品方案已就绪。请用微信扫描下方二维码打开此页面，完成登录。</div>' +
+        '<div class="login-card__qr">' +
+          '<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(pageUrl) + '" alt="扫码打开" width="180" height="180" />' +
+        '</div>' +
+        '<div class="login-card__hint">长按或扫描二维码，在微信中打开</div>';
+    }
+
+    if (typeof Chat !== 'undefined' && Chat.disableInput) {
+      Chat.disableInput(true);
+    }
+
+    return container;
+  }
+
+  function renderNextStepCard(nextStep) {
+    var container = document.createElement('div');
+    container.className = 'next-step-card fade-in';
+
+    container.innerHTML =
+      '<div class="next-step-card__title">' + escapeHtml(nextStep.title) + '</div>' +
+      '<div class="next-step-card__desc">' + escapeHtml(nextStep.description) + '</div>' +
+      '<button class="next-step-card__btn">开始这一步</button>';
+
+    var btn = container.querySelector('.next-step-card__btn');
+    btn.addEventListener('click', function () {
+      btn.disabled = true;
+      btn.textContent = '正在开始...';
+      var userId = (typeof App !== 'undefined' && App.getUserId) ? App.getUserId() : '';
+      if (userId && nextStep.auto_prompt) {
+        sendMessage(userId, nextStep.auto_prompt);
+      }
+    });
+
+    return container;
+  }
+
   function renderProductPackage(pkg) {
     var container = document.createElement('div');
     container.className = 'fade-in';
@@ -210,25 +267,22 @@ var Chat = (function () {
       messages.appendChild(renderBubbleAi(data.message));
     }
 
-    // Stage 0 complete: show knowledge points, then start Stage 1
+    // Stage 0 complete: show knowledge points + next step card
     if (data.is_complete && data.stage === 1 && data.stage_data) {
       var kps = data.stage_data.knowledge_points || [];
       if (kps.length > 0) {
         messages.appendChild(renderKnowledgePoints(kps));
       }
 
-      // Stage 0->1 transition message
-      messages.appendChild(
-        renderBubbleAi(
-          '现在让我们把你的经验包装成一个产品。我会问你几个问题，帮你找到最适合的变现方式。'
-        )
-      );
+      if (data.next_step) {
+        messages.appendChild(renderNextStepCard(data.next_step));
+      }
 
       scrollToBottom();
       return;
     }
 
-    // Stage 1 complete: product packaged, check access before kit
+    // Stage 1 complete: product packaged + login card or paywall
     if (data.is_complete && data.stage >= 2) {
       var pkg =
         (data.stage_data && data.stage_data.product_package) || null;
@@ -236,11 +290,15 @@ var Chat = (function () {
         messages.appendChild(renderProductPackage(pkg));
       }
 
-      // Check paywall before transitioning to kit
-      if (typeof Paywall !== 'undefined' && Paywall.checkAndShow) {
-        Paywall.checkAndShow(App.getUserId(), data);
-      } else if (typeof App !== 'undefined' && App.onStageOneComplete) {
-        App.onStageOneComplete(data);
+      if (data.is_anonymous) {
+        messages.appendChild(renderLoginCard());
+      } else {
+        // Logged in user: show paywall or complete
+        if (typeof Paywall !== 'undefined' && Paywall.checkAndShow) {
+          Paywall.checkAndShow(App.getUserId(), data);
+        } else if (typeof App !== 'undefined' && App.onStageOneComplete) {
+          App.onStageOneComplete(data);
+        }
       }
       scrollToBottom();
       return;
@@ -284,6 +342,71 @@ var Chat = (function () {
       .catch(function () {});
   }
 
+  // ---- Session resume helpers ----
+
+  function renderResumeCards(knowledgePoints, productPackage) {
+    var messages = getMessagesContainer();
+    if (!messages) return;
+
+    // Stage transition header
+    var transition = document.createElement('div');
+    transition.className = 'stage-transition';
+    transition.innerHTML =
+      '<div class="stage-transition__label">评估完成</div>' +
+      '<div class="stage-transition__title">你的经验比你想的值钱</div>';
+    messages.appendChild(transition);
+
+    if (knowledgePoints && knowledgePoints.length > 0) {
+      knowledgePoints.forEach(function (kp) {
+        var card = document.createElement('div');
+        card.className = 'kp-card';
+        var typeLabels = {
+          price_transparency: '价格透明',
+          pitfall_guide: '避坑指南',
+          channel_info: '渠道信息',
+          industry_insider: '业内人视角',
+        };
+        card.innerHTML =
+          '<div class="kp-card__type">' +
+            escapeHtml(typeLabels[kp.knowledge_type] || kp.knowledge_type) +
+          '</div>' +
+          '<div class="kp-card__desc">' + escapeHtml(kp.description) + '</div>' +
+          '<div class="kp-card__meta"><strong>谁会买:</strong> ' + escapeHtml(kp.target_buyer) + '</div>' +
+          '<div class="kp-card__meta"><strong>估算价值:</strong> ' + escapeHtml(kp.estimated_value) + '</div>';
+        messages.appendChild(card);
+      });
+    }
+
+    if (productPackage) {
+      messages.appendChild(renderProductPackage(productPackage));
+    }
+  }
+
+  function showLoginCard() {
+    var messages = getMessagesContainer();
+    if (!messages) return;
+    messages.appendChild(renderLoginCard());
+    disableInput(true);
+    scrollToBottom();
+  }
+
+  function showPaywallIfNeeded(userId) {
+    var tier = 'free';
+    try {
+      var userInfo = localStorage.getItem('sp_user_info');
+      if (userInfo) {
+        var parsed = JSON.parse(userInfo);
+        tier = parsed.tier || 'free';
+      }
+    } catch (e) { /* ignore */ }
+
+    if (tier === 'free') {
+      if (typeof Paywall !== 'undefined' && Paywall.checkAndShow) {
+        Paywall.checkAndShow(userId, {});
+      }
+    }
+  }
+
   // ---- Public API ----
 
   return {
@@ -292,5 +415,8 @@ var Chat = (function () {
     renderBubbleAi: renderBubbleAi,
     disableInput: disableInput,
     loadHistory: loadHistory,
+    showLoginCard: showLoginCard,
+    showPaywallIfNeeded: showPaywallIfNeeded,
+    renderResumeCards: renderResumeCards,
   };
 })();

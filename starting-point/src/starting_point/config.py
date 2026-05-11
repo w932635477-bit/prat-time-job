@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     wx_pay_mch_id: str = ""
     wx_pay_api_key: str = ""
     wx_pay_notify_url: str = ""
+    wx_pay_cert_path: str = ""
+    wx_pay_key_path: str = ""
+    wx_webhook_token: str = ""
+    wx_webhook_aes_key: str = ""
     admin_password: str = "changeme"
     firecrawl_api_key: str = ""
     static_dir: Path = Path("")

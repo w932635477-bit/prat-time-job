@@ -445,3 +445,115 @@
   color: var(--gold);
   line-height: 1.6;
 }
+
+/* ---- Next-step guidance card ---- */
+
+.next-step-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--gold-border);
+  border-radius: var(--r-lg);
+  padding: var(--sp-6) var(--sp-5);
+  margin: var(--sp-5) 0;
+  text-align: center;
+}
+
+.next-step-card__title {
+  font: var(--t-title);
+  color: var(--gold);
+  margin-bottom: var(--sp-2);
+}
+
+.next-step-card__desc {
+  font: var(--t-body-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: var(--sp-5);
+}
+
+.next-step-card__btn {
+  display: inline-block;
+  background: var(--gold);
+  color: var(--bg-primary);
+  font: var(--t-body);
+  font-weight: 600;
+  padding: var(--sp-3) var(--sp-8);
+  border: none;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.next-step-card__btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.next-step-card__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ---- Login card (pre-kit gate) ---- */
+
+.login-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--gold-border);
+  border-radius: var(--r-lg);
+  padding: var(--sp-8) var(--sp-5);
+  margin: var(--sp-5) 0;
+  text-align: center;
+}
+
+.login-card__icon {
+  color: var(--gold);
+  margin-bottom: var(--sp-4);
+}
+
+.login-card__title {
+  font: var(--t-title);
+  color: var(--text-primary);
+  margin-bottom: var(--sp-2);
+}
+
+.login-card__desc {
+  font: var(--t-body-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: var(--sp-5);
+}
+
+.login-card__btn {
+  display: inline-block;
+  background: #07C160;
+  color: #fff;
+  font: var(--t-body);
+  font-weight: 600;
+  padding: var(--sp-3) var(--sp-8);
+  border-radius: var(--r-pill);
+  text-decoration: none;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.login-card__btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.login-card__qr {
+  margin: var(--sp-4) auto;
+  padding: var(--sp-3);
+  background: #fff;
+  border-radius: var(--r-md);
+  display: inline-block;
+}
+
+.login-card__qr img {
+  display: block;
+}
+
+.login-card__hint {
+  font: var(--t-caption);
+  color: var(--text-tertiary);
+  margin-top: var(--sp-2);
+}

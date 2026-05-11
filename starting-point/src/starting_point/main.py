@@ -149,11 +149,13 @@ from starting_point.auth.routes import router as auth_router
 from starting_point.payments.routes import router as payment_router
 from starting_point.user.routes import router as user_router
 from starting_point.admin.routes import router as admin_router
+from starting_point.wechat.webhook import router as wechat_webhook_router
 
 app.include_router(auth_router)
 app.include_router(payment_router)
 app.include_router(user_router)
 app.include_router(admin_router)
+app.include_router(wechat_webhook_router)
 
 
 # ---- Session auth ----
@@ -175,17 +177,31 @@ def _get_session_user_id(request: Request) -> str:
 
 
 @app.post("/api/session")
-async def create_session(req: SessionRequest, response: JSONResponse):
+async def create_session(req: SessionRequest, request: Request, response: JSONResponse):
     """Issue a JWT session cookie for a user_id. Called once on first visit."""
     from starting_point.auth.jwt import create_token
     token = create_token(req.user_id)
+
+    user_repo: UserRepo = request.app.state.user_repo
+    existing = await user_repo.get_user(req.user_id)
+    if existing is None:
+        conn = request.app.state.db.conn()
+        await conn.execute(
+            "INSERT OR IGNORE INTO users (id, wx_openid, tier, created_at, updated_at) "
+            "VALUES (?, NULL, 'free', datetime('now'), datetime('now'))",
+            (req.user_id,),
+        )
+        await conn.commit()
+
     resp = JSONResponse({"ok": True, "user_id": req.user_id})
+    resp.delete_cookie("session", path="/")
     resp.set_cookie(
         "session",
         token,
         httponly=True,
         max_age=settings.jwt_expiry_hours * 3600,
         samesite="lax",
+        path="/",
     )
     return resp
 
@@ -214,13 +230,16 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
     user = await user_repo.get_user(req.user_id)
     tier = user.tier if user else "free"
     tier_expires_at = user.tier_expires_at if user else None
+    is_anonymous = (user is None or not user.wx_openid or user.wx_openid == "")
 
-    return await engine.handle(
+    result = await engine.handle(
         user_id=req.user_id,
         message=req.message,
         tier=tier,
         tier_expires_at=tier_expires_at,
     )
+    result.is_anonymous = is_anonymous
+    return result
 
 
 @app.get("/api/kit/{user_id}")
@@ -258,8 +277,11 @@ async def get_state(user_id: str, request: Request):
     state_repo = StateRepo(db)
     state = await state_repo.load(user_id)
     if state is None:
-        return {"current_stage": None}
-    return state
+        return {"current_stage": None, "is_anonymous": True}
+    user_repo: UserRepo = request.app.state.user_repo
+    user = await user_repo.get_user(user_id)
+    is_anonymous = (user is None or not user.wx_openid or user.wx_openid == "")
+    return {**state, "is_anonymous": is_anonymous}
 
 
 @app.get("/api/messages/{user_id}")

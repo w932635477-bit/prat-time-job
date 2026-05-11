@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from starting_point.llm.client import LLMClient
 from starting_point.db.repos import MessageRepo, StateRepo
-from starting_point.models import StageZeroOutput, ChatResponse
+from starting_point.models import StageZeroOutput, ChatResponse, NextStep
 from starting_point.prompts.stage_zero import SYSTEM_PROMPT, FORCE_EXTRACT_SUFFIX
 from starting_point.utils.json import extract_json
 
@@ -121,6 +121,11 @@ class StageZeroHandler:
                 stage=1,
                 stage_data=new_stage_data,
                 is_complete=True,
+                next_step=NextStep(
+                    title="包装你的知识产品",
+                    description="我们已经找到了你的经验亮点。下一步是把它们包装成一个可以卖的产品 — 确定目标客户、定价和交付方式。",
+                    auto_prompt="好，帮我包装成产品",
+                ),
             )
         except ValidationError:
             # JSON didn't validate (e.g. < 3 points) -> continue conversation

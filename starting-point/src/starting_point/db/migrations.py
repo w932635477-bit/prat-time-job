@@ -19,7 +19,7 @@ async def run_migrations(db: object) -> None:
 
         CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
-            wx_openid TEXT UNIQUE NOT NULL,
+            wx_openid TEXT UNIQUE,
             wx_unionid TEXT NOT NULL DEFAULT '',
             nickname TEXT NOT NULL DEFAULT '',
             avatar_url TEXT NOT NULL DEFAULT '',
@@ -95,5 +95,34 @@ async def run_migrations(db: object) -> None:
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
         CREATE INDEX IF NOT EXISTS idx_creators_category ON creator_examples(category);
-    """)
+
+        -- Fix: allow anonymous users (wx_openid can be NULL)
+        -- SQLite doesn't support ALTER COLUMN, so recreate the table if needed
+        """)
+    # Check if wx_openid allows NULL
+    cursor = await conn.execute("PRAGMA table_info(users)")
+    columns = await cursor.fetchall()
+    for col in columns:
+        if col[1] == 'wx_openid' and col[3] == 1:  # col[3] = notnull
+            # wx_openid is NOT NULL, need to recreate
+            await conn.executescript("""
+                CREATE TABLE users_new (
+                    id TEXT PRIMARY KEY,
+                    wx_openid TEXT UNIQUE,
+                    wx_unionid TEXT NOT NULL DEFAULT '',
+                    nickname TEXT NOT NULL DEFAULT '',
+                    avatar_url TEXT NOT NULL DEFAULT '',
+                    phone TEXT NOT NULL DEFAULT '',
+                    tier TEXT NOT NULL DEFAULT 'free',
+                    tier_expires_at DATETIME,
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+                INSERT OR IGNORE INTO users_new SELECT * FROM users;
+                DROP TABLE users;
+                ALTER TABLE users_new RENAME TO users;
+                CREATE INDEX IF NOT EXISTS idx_users_wx_openid ON users(wx_openid);
+            """)
+            await conn.commit()
+            break
     await conn.commit()

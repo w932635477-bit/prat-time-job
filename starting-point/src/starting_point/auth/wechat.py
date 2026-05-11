@@ -8,8 +8,9 @@ import httpx
 from starting_point.config import settings
 
 
-def build_authorize_url(redirect_uri: str) -> str:
-    state = secrets.token_urlsafe(16)
+def build_authorize_url(redirect_uri: str, state: str = "") -> str:
+    if not state:
+        state = secrets.token_urlsafe(16)
     params = {
         "appid": settings.wx_app_id,
         "redirect_uri": redirect_uri,

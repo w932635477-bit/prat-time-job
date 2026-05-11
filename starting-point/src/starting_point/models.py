@@ -53,6 +53,12 @@ class PlatformRecommendation(BaseModel):
     content_format: str = Field(min_length=2)
 
 
+class NextStep(BaseModel):
+    title: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    auto_prompt: str = Field(min_length=1)
+
+
 class ChatRequest(BaseModel):
     user_id: str = Field(min_length=1, max_length=64)
     message: str = Field(min_length=2, max_length=500)
@@ -67,11 +73,13 @@ class ChatResponse(BaseModel):
     skill_completed: bool = False
     output: dict | None = None
     current_step: int = 0
+    next_step: NextStep | None = None
+    is_anonymous: bool = False
 
 
 class User(BaseModel):
     id: str
-    wx_openid: str
+    wx_openid: str | None = None
     wx_unionid: str = ""
     nickname: str = ""
     avatar_url: str = ""

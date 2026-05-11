@@ -1,5 +1,5 @@
 // starting-point/static/js/paywall.js
-// Paywall gate: shows pricing cards after Stage 1, triggers WeChat JSAPI payment
+// Paywall gate: shows pricing cards after Stage 1, triggers WeChat payment
 
 var Paywall = (function () {
   'use strict';
@@ -79,7 +79,8 @@ var Paywall = (function () {
           '<div class="pricing-card__desc">完整方案包 + 创始人 1 对 1 微信辅导</div>' +
         '</div>' +
       '</div>' +
-      '<div id="paywall-status" style="text-align:center;margin-top:16px;color:var(--text-secondary);font-size:0.85rem;display:none;"></div>';
+      '<div id="paywall-status" style="text-align:center;margin-top:16px;color:var(--text-secondary);font-size:0.85rem;display:none;"></div>' +
+      '<div id="paywall-qr" style="text-align:center;margin-top:16px;display:none;"></div>';
 
     messages.appendChild(paywall);
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
@@ -108,6 +109,7 @@ var Paywall = (function () {
 
     fetch('/api/payments/create?tier=' + encodeURIComponent(tier), {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
     })
       .then(function (resp) {
@@ -115,23 +117,32 @@ var Paywall = (function () {
         return resp.json();
       })
       .then(function (data) {
-        if (statusEl) statusEl.textContent = '正在调起微信支付...';
+        var prepay = data.prepay;
+        if (!prepay || !prepay.success) {
+          throw new Error(prepay ? prepay.error : 'Prepay failed');
+        }
 
-        // Try WeChat JSAPI if available (inside WeChat browser)
-        if (typeof wx !== 'undefined' && wx.chooseWXPay) {
-          callWechatPay(data.prepay, data.order_id, userId);
+        if (prepay.trade_type === 'JSAPI' && typeof wx !== 'undefined' && wx.chooseWXPay) {
+          // WeChat browser: JSAPI payment
+          if (statusEl) statusEl.textContent = '正在调起微信支付...';
+          callWechatPay(prepay, data.order_id, userId);
+        } else if (prepay.trade_type === 'MWEB') {
+          // Mobile non-WeChat browser: H5 payment
+          if (statusEl) statusEl.textContent = '正在跳转微信支付...';
+          var redirectUrl = encodeURIComponent(location.href);
+          window.location.href = prepay.mweb_url + '&redirect_url=' + redirectUrl;
+        } else if (prepay.trade_type === 'NATIVE') {
+          // Desktop: show payment QR code
+          if (statusEl) statusEl.textContent = '请用微信扫码支付';
+          showPaymentQrCode(prepay.code_url, data.order_id, userId);
         } else {
-          // Not in WeChat, show manual payment instructions
-          if (statusEl) {
-            statusEl.textContent = '请在微信中打开此页面完成支付';
-          }
-          // Restore cards for retry
+          if (statusEl) statusEl.textContent = '请在微信中打开此页面完成支付';
           cards.forEach(function (c) { c.style.pointerEvents = ''; c.style.opacity = ''; });
         }
       })
       .catch(function (err) {
         console.error('Payment error:', err);
-        if (statusEl) statusEl.textContent = '支付出错，请重试';
+        if (statusEl) statusEl.textContent = '支付出错: ' + err.message;
         cards.forEach(function (c) { c.style.pointerEvents = ''; c.style.opacity = ''; });
       });
   }
@@ -162,12 +173,22 @@ var Paywall = (function () {
     });
   }
 
+  function showPaymentQrCode(codeUrl, orderId, userId) {
+    var qrEl = document.getElementById('paywall-qr');
+    if (!qrEl) return;
+    qrEl.style.display = 'block';
+    qrEl.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' +
+      encodeURIComponent(codeUrl) + '" alt="支付二维码" style="border-radius:8px;">' +
+      '<p style="margin-top:8px;font-size:0.8rem;color:var(--text-secondary);">打开微信扫一扫完成支付</p>';
+    pollPaymentStatus(orderId, userId);
+  }
+
   function pollPaymentStatus(orderId, userId) {
     var statusEl = document.getElementById('paywall-status');
     if (statusEl) statusEl.textContent = '确认支付中...';
 
     var attempts = 0;
-    var maxAttempts = 10;
+    var maxAttempts = 30;
 
     function poll() {
       if (attempts >= maxAttempts) {
@@ -176,22 +197,23 @@ var Paywall = (function () {
       }
       attempts++;
 
-      fetch('/api/payments/status/' + encodeURIComponent(orderId))
+      fetch('/api/payments/status/' + encodeURIComponent(orderId), {
+        credentials: 'same-origin',
+      })
         .then(function (r) { return r.json(); })
         .then(function (data) {
           if (data.status === 'paid') {
-            // Payment confirmed, update local tier and reload
             updateLocalTier(data.tier);
             if (statusEl) statusEl.textContent = '支付成功！正在继续...';
             setTimeout(function () {
               window.location.reload();
             }, 1000);
           } else {
-            setTimeout(poll, 2000);
+            setTimeout(poll, 3000);
           }
         })
         .catch(function () {
-          setTimeout(poll, 2000);
+          setTimeout(poll, 3000);
         });
     }
 

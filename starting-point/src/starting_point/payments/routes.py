@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 
-from starting_point.auth.middleware import extract_bearer, get_current_user, get_user_from_request
+from starting_point.auth.middleware import get_user_from_request
 from starting_point.config import settings
 from starting_point.db.order_repo import OrderRepo
 from starting_point.db.user_repo import UserRepo
@@ -46,12 +46,17 @@ async def create_order(tier: str, request: Request):
     await track_event(request.app.state.db, user.id, "payment_create", {"tier": tier})
 
     notify_url = str(request.base_url).rstrip("/") + "/api/payments/wechat/callback"
+    user_agent = request.headers.get("user-agent", "")
+    client_ip = request.client.host if request.client else "127.0.0.1"
+
     prepay = await create_prepay_order(
         order_id=order.id,
         amount_fen=tier_def["price_fen"],
         description=tier_def["label"],
-        openid=user.wx_openid,
         notify_url=notify_url,
+        user_agent=user_agent,
+        openid=user.wx_openid or "",
+        client_ip=client_ip,
     )
     return {"order_id": order.id, "prepay": prepay}
 

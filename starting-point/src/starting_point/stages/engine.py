@@ -75,6 +75,7 @@ class ConversationEngine:
                         stage=result.stage,
                         stage_data={**result.stage_data, "kit_id": kit["id"]},
                         is_complete=result.is_complete,
+                        next_step=result.next_step,
                     )
                 except Exception as e:
                     logger.error("Kit generation failed: %s", e)
@@ -83,6 +84,7 @@ class ConversationEngine:
                         stage=result.stage,
                         stage_data={**result.stage_data, "kit_error": "启动套件生成失败，请重试"},
                         is_complete=result.is_complete,
+                        next_step=result.next_step,
                     )
             return result
 

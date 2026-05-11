@@ -100,9 +100,22 @@
   </div>
 
   <!-- Scripts (no modules — WeChat compatible) -->
+  <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
   <script src="js/paywall.js?v=5"></script>
   <script src="js/chat.js?v=5"></script>
   <script src="js/kit.js?v=5"></script>
   <script src="js/app.js?v=5"></script>
+  <script>
+    // Handle OAuth callback: update localStorage with authenticated user ID
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('auth') === '1' && params.get('uid')) {
+        localStorage.setItem('sp_user_id', params.get('uid'));
+        localStorage.setItem('sp_auth', 'wechat');
+        // Clean URL without reload
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    })();
+  </script>
 </body>
 </html>

@@ -16,6 +16,35 @@ var App = (function () {
   ];
   var STAGE_TOTAL = STAGE_NAMES.length;
 
+  // ---- Device detection ----
+
+  function isWechatBrowser() {
+    return /MicroMessenger/i.test(navigator.userAgent);
+  }
+
+  function isMobile() {
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  }
+
+  // ---- WeChat JS SDK init ----
+
+  function initWxConfig() {
+    if (!isWechatBrowser() || typeof wx === 'undefined') return;
+    fetch('/api/auth/wechat/jsapi-config?url=' + encodeURIComponent(location.href.split('#')[0]))
+      .then(function (r) { return r.json(); })
+      .then(function (config) {
+        wx.config({
+          debug: false,
+          appId: config.appId,
+          timestamp: config.timestamp,
+          nonceStr: config.nonceStr,
+          signature: config.signature,
+          jsApiList: ['chooseWXPay']
+        });
+      })
+      .catch(function () {});
+  }
+
   // ---- User ID management ----
 
   function getUserId() {
@@ -30,6 +59,63 @@ var App = (function () {
   // ---- Session management ----
 
   function ensureSession(callback) {
+    // If just returned from OAuth or QR login, the session cookie was set by the server.
+    // Sync user_id from the server session rather than trusting localStorage.
+    if (localStorage.getItem('sp_auth') === 'wechat') {
+      localStorage.removeItem('sp_auth');
+      fetch('/api/session', { method: 'GET' })
+        .then(function (resp) { return resp.json(); })
+        .then(function (data) {
+          if (data.authenticated && data.user_id) {
+            localStorage.setItem(USER_ID_KEY, data.user_id);
+            sessionReady = true;
+            if (callback) callback();
+          } else {
+            // No valid session cookie yet, create one for the logged-in user
+            createSessionForUser(getUserId(), callback);
+          }
+        })
+        .catch(function () {
+          createSessionForUser(getUserId(), callback);
+        });
+      return;
+    }
+
+    // Check if existing session is valid
+    fetch('/api/session', { method: 'GET' })
+      .then(function (resp) { return resp.json(); })
+      .then(function (data) {
+        if (data.authenticated && data.user_id) {
+          localStorage.setItem(USER_ID_KEY, data.user_id);
+          sessionReady = true;
+          if (callback) callback();
+          return;
+        }
+        createAnonymousSession(callback);
+      })
+      .catch(function () {
+        createAnonymousSession(callback);
+      });
+  }
+
+  function createSessionForUser(userId, callback) {
+    fetch('/api/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId }),
+    })
+      .then(function (resp) { return resp.json(); })
+      .then(function () {
+        sessionReady = true;
+        if (callback) callback();
+      })
+      .catch(function () {
+        sessionReady = true;
+        if (callback) callback();
+      });
+  }
+
+  function createAnonymousSession(callback) {
     fetch('/api/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -177,6 +263,8 @@ var App = (function () {
     ensureSession(function () {
       checkExistingSession(getUserId());
     });
+
+    initWxConfig();
   }
 
   function checkExistingSession(userId) {
@@ -211,6 +299,19 @@ var App = (function () {
                 var stage = state.current_stage || 0;
                 resumeChat(stage);
                 Chat.loadHistory(userId);
+
+                if (stage >= 2 && state.is_anonymous) {
+                  var sd = state.stage_data || {};
+                  var kps = sd.knowledge_points || [];
+                  var pkg = sd.product_package || null;
+                  Chat.renderResumeCards(kps, pkg);
+                  Chat.showLoginCard();
+                } else if (stage >= 2 && !state.is_anonymous) {
+                  var sd2 = state.stage_data || {};
+                  var pkg2 = sd2.product_package || null;
+                  if (pkg2) Chat.renderResumeCards([], pkg2);
+                  Chat.showPaywallIfNeeded(userId);
+                }
               }
             })
             .catch(function () {});
@@ -229,6 +330,8 @@ var App = (function () {
     getUserId: getUserId,
     updateProgress: updateProgress,
     hideRoadmap: hideRoadmap,
+    isWechatBrowser: isWechatBrowser,
+    isMobile: isMobile,
   };
 })();
 
