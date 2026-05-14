@@ -313,15 +313,15 @@ class StageOneHandler:
             return ""
 
         user_statements = []
-        assistant_questions = []
+        assistant_proposals = []
 
         for msg in history:
             content = msg.get("content", "")
             role = msg.get("role", "")
             if role == "user" and len(content) > 5:
-                user_statements.append(content[:200])
-            elif role == "assistant" and ("?" in content or "？" in content) and len(content) < 200:
-                assistant_questions.append(content[:200])
+                user_statements.append(content[:300])
+            elif role == "assistant" and self._is_product_proposal(content):
+                assistant_proposals.append(content[:400])
 
         if not user_statements:
             return ""
@@ -331,13 +331,25 @@ class StageOneHandler:
         for i, stmt in enumerate(recent_statements, 1):
             summary_parts.append(f"  {i}. {stmt}")
 
-        if assistant_questions:
-            recent_questions = assistant_questions[-3:]
-            summary_parts.append("\n你问过的关键问题：")
-            for q in recent_questions:
-                summary_parts.append(f"  - {q}")
+        if assistant_proposals:
+            recent_proposals = assistant_proposals[-2:]
+            summary_parts.append("\n上一阶段AI提出的产品方案（用户已看过）：")
+            for p in recent_proposals:
+                summary_parts.append(f"  {p}")
 
         return "\n".join(summary_parts)
+
+    def _is_product_proposal(self, content: str) -> bool:
+        signals = (
+            "产品一", "产品二", "产品三",
+            "产品方案", "变现方向", "可变现",
+            "方案一", "方案二", "方案三",
+            "定价", "报价", "收费标准",
+            "目标客户", "目标买家", "目标用户",
+            "交付方式", "交付形式", "服务形式",
+        )
+        matches = sum(1 for s in signals if s in content)
+        return matches >= 2 and len(content) > 50
 
     def _build_market_context(self, kps: list[dict], creator_context: str) -> str:
         if not kps:

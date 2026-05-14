@@ -292,7 +292,6 @@ async def test_summarize_stage_zero_extracts_user_statements():
     summary = handler._summarize_stage_zero(history)
     assert "15年建材" in summary
     assert "出厂价" in summary
-    assert "渠道价格" in summary
 
 
 @pytest.mark.asyncio
@@ -303,6 +302,28 @@ async def test_summarize_stage_zero_empty():
     handler = StageOneHandler.__new__(StageOneHandler)
     assert handler._summarize_stage_zero([]) == ""
     assert handler._summarize_stage_zero([{"role": "assistant", "content": "hi", "stage": 0}]) == ""
+
+
+@pytest.mark.asyncio
+async def test_summarize_stage_zero_includes_product_proposals():
+    """_summarize_stage_zero extracts AI product proposals from Stage 0."""
+    from starting_point.stages.stage_one import StageOneHandler
+
+    handler = StageOneHandler.__new__(StageOneHandler)
+    history = [
+        {"role": "user", "content": "我做了12年政府工程", "stage": 0},
+        {"role": "assistant", "content": (
+            "我来帮你包装成3个产品：\n\n"
+            "产品一：政府关系破冰课\n目标客户：中小老板\n定价：3999元\n交付方式：录播课\n\n"
+            "产品二：回款防坑指南\n目标客户：工程老板\n定价：999元\n交付方式：一对一咨询"
+        ), "stage": 0},
+        {"role": "user", "content": "定价200、500、1000，接受线上咨询", "stage": 0},
+    ]
+
+    summary = handler._summarize_stage_zero(history)
+    assert "12年政府工程" in summary
+    assert "产品方案" in summary or "产品一" in summary
+    assert "定价" in summary
 
 
 @pytest.mark.asyncio
