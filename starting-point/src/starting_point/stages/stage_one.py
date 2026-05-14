@@ -18,6 +18,17 @@ MAX_STAGE1_MESSAGES = 12
 
 _STAGE_ZERO_SUMMARY_LIMIT = 10
 
+# Signals that the LLM has produced a complete product plan
+_PLAN_SIGNALS = (
+    "方案就这么定了",
+    "方案如下",
+    "你的服务产品",
+    "产品名称",
+    "你的产品方案",
+    "就这么定了",
+    "产品方案已经",
+)
+
 
 class StageOneHandler:
     """Stage 1 product packaging handler.
@@ -94,6 +105,16 @@ class StageOneHandler:
             **stage_data,
             "user_message_count": msg_count,
         }
+
+        # Early extraction: if LLM produced a complete plan and we're past MIN messages
+        if msg_count >= MIN_STAGE1_MESSAGES and self._has_plan_summary(response):
+            extract_result = await self._try_extract(
+                user_id, llm_messages, kps, stage_data, msg_count,
+                stage_zero_summary, creator_context, response,
+            )
+            if extract_result is not None:
+                return extract_result
+
         await self._state_repo.save(user_id, 1, new_stage_data)
 
         return ChatResponse(
@@ -236,6 +257,50 @@ class StageOneHandler:
                 auto_prompt="生成我的启动套件",
             ),
         )
+
+    def _has_plan_summary(self, response: str) -> bool:
+        """Check if the LLM response contains a structured product plan."""
+        response_lower = response.lower()
+        return any(signal in response for signal in _PLAN_SIGNALS) or (
+            "**产品" in response and "**定价" in response
+        )
+
+    async def _try_extract(
+        self,
+        user_id: str,
+        llm_messages: list[dict],
+        kps: list[dict],
+        stage_data: dict,
+        msg_count: int,
+        stage_zero_summary: str,
+        creator_context: str,
+        last_response: str,
+    ) -> ChatResponse | None:
+        """Attempt early extraction. Returns None if extraction fails."""
+        kp_context = f"\n知识点:\n{json.dumps(kps, ensure_ascii=False)}\n"
+        creator_section = f"\n{creator_context}" if creator_context else ""
+        summary_section = f"\n对话背景:\n{stage_zero_summary}\n" if stage_zero_summary else ""
+
+        extract_system = SYSTEM_PROMPT.format(
+            stage_zero_summary=summary_section,
+            knowledge_points=kp_context,
+            creator_context=creator_section,
+        ) + "\n\n" + EXTRACT_PROMPT
+
+        extract_messages = llm_messages + [
+            {"role": "user", "content": "请基于我们的对话，给出完整的产品包装方案。"},
+        ]
+
+        try:
+            validated = await self._llm.chat_json(
+                messages=extract_messages,
+                schema=ProductPackage,
+                system=extract_system,
+            )
+            return await self._complete_stage(user_id, validated, stage_data, msg_count)
+        except (ValueError, ValidationError) as exc:
+            logger.info("Early extraction not ready yet: %s", exc)
+            return None
 
     def _summarize_stage_zero(self, history: list[dict[str, str]]) -> str:
         if not history:

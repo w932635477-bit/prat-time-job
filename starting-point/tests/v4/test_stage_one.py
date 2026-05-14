@@ -195,6 +195,88 @@ async def test_stage_one_force_complete_uses_all_kps(db):
 
 
 @pytest.mark.asyncio
+async def test_stage_one_early_extraction_on_plan_summary(db):
+    """Stage 1 extracts early when LLM produces a complete product plan."""
+    from starting_point.stages.stage_one import MIN_STAGE1_MESSAGES
+    from starting_point.stages.stage_one import StageOneHandler
+    from starting_point.db.repos import MessageRepo, StateRepo
+    from starting_point.models import ProductPackage, PriceRange
+
+    msg_repo = MessageRepo(db)
+    state_repo = StateRepo(db)
+    llm = AsyncMock()
+
+    kps = [
+        {"id": "kp_1", "description": "建材价格", "industry": "建材",
+         "knowledge_type": "price_transparency", "target_buyer": "业主",
+         "estimated_value": "省5000元"},
+    ]
+    await state_repo.save("u1", 1, {
+        "status": "completed",
+        "knowledge_points": kps,
+        "user_message_count": MIN_STAGE1_MESSAGES + 2,
+    })
+
+    # LLM returns a plan summary (triggers _has_plan_summary)
+    llm.chat.return_value = (
+        "好，方案就这么定了。\n\n"
+        "**产品名称：** 建材砍价咨询\n"
+        "**定价：** 99-199元\n"
+        "**交付方式：** 微信一对一咨询"
+    )
+
+    # chat_json returns a valid ProductPackage
+    pkg = ProductPackage(
+        selected_knowledge_id="kp_1",
+        product_name="建材砍价咨询",
+        one_liner="帮你砍到出厂价",
+        target_buyer="预算紧张的装修业主",
+        service_type="consultation",
+        price_range=PriceRange(min=99, max=199),
+        delivery_method="微信一对一咨询45分钟",
+    )
+    llm.chat_json.return_value = pkg
+
+    handler = StageOneHandler(llm, msg_repo, state_repo)
+    result = await handler.handle(user_id="u1", message="就这样吧")
+
+    assert result.is_complete
+    assert result.stage == 2
+    assert "建材砍价咨询" in result.message
+
+
+@pytest.mark.asyncio
+async def test_stage_one_no_early_extraction_without_plan(db):
+    """Stage 1 does not extract early when LLM is still gathering info."""
+    from starting_point.stages.stage_one import MIN_STAGE1_MESSAGES
+    from starting_point.stages.stage_one import StageOneHandler
+    from starting_point.db.repos import MessageRepo, StateRepo
+
+    msg_repo = MessageRepo(db)
+    state_repo = StateRepo(db)
+    llm = AsyncMock()
+
+    kps = [
+        {"id": "kp_1", "description": "建材价格", "industry": "建材",
+         "knowledge_type": "price_transparency", "target_buyer": "业主",
+         "estimated_value": "省5000元"},
+    ]
+    await state_repo.save("u1", 1, {
+        "status": "completed",
+        "knowledge_points": kps,
+        "user_message_count": MIN_STAGE1_MESSAGES + 1,
+    })
+
+    # LLM asks a follow-up question (no plan summary)
+    llm.chat.return_value = "你打算收多少钱？99元还是199元？"
+
+    handler = StageOneHandler(llm, msg_repo, state_repo)
+    result = await handler.handle(user_id="u1", message="我还没想好")
+
+    assert not result.is_complete
+
+
+@pytest.mark.asyncio
 async def test_summarize_stage_zero_extracts_user_statements():
     """_summarize_stage_zero extracts key user statements."""
     from starting_point.stages.stage_one import StageOneHandler
