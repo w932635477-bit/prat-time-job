@@ -13,7 +13,6 @@ from starting_point.prompts.stage_one import SYSTEM_PROMPT, EXTRACT_PROMPT
 logger = logging.getLogger(__name__)
 
 MAX_STAGE1_MESSAGES = 6
-MAX_EXTRA_ATTEMPTS = 2
 
 
 class StageOneHandler:
@@ -109,28 +108,9 @@ class StageOneHandler:
                 user_id, validated, stage_data, msg_count,
             )
         except (ValueError, ValidationError) as exc:
-            logger.warning("Stage 1 extraction failed: %s", exc)
-            extra_attempts = stage_data.get("extra_attempts", 0) + 1
-
-            if extra_attempts > MAX_EXTRA_ATTEMPTS:
-                return await self._force_complete(
-                    user_id, stage_data, kps, msg_count,
-                )
-
-            fallback_msg = "我需要再了解一些细节，能告诉我你觉得多少钱比较合理吗？"
-            await self._msg_repo.save(user_id, "assistant", fallback_msg, stage=1)
-            new_stage_data = {
-                **stage_data,
-                "user_message_count": msg_count,
-                "extra_attempts": extra_attempts,
-            }
-            await self._state_repo.save(user_id, 1, new_stage_data)
-
-            return ChatResponse(
-                message=fallback_msg,
-                stage=1,
-                stage_data=new_stage_data,
-                is_complete=False,
+            logger.warning("Stage 1 extraction failed, force-completing: %s", exc)
+            return await self._force_complete(
+                user_id, stage_data, kps, msg_count,
             )
 
     async def _complete_stage(
