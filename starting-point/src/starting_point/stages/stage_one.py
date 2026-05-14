@@ -88,11 +88,13 @@ class StageOneHandler:
         kp_context = f"\n已识别的可变现知识点:\n{json.dumps(kps, ensure_ascii=False, indent=2)}\n"
         creator_section = f"\n{creator_context}" if creator_context else ""
         summary_section = f"\n你们之前的对话摘要:\n{stage_zero_summary}\n" if stage_zero_summary else ""
+        market_section = self._build_market_context(kps, creator_context)
 
         system = SYSTEM_PROMPT.format(
             stage_zero_summary=summary_section,
             knowledge_points=kp_context,
             creator_context=creator_section,
+            market_context=market_section,
         )
 
         if msg_count >= MIN_STAGE1_MESSAGES:
@@ -141,11 +143,13 @@ class StageOneHandler:
         kp_context = f"\n知识点:\n{json.dumps(kps, ensure_ascii=False)}\n"
         creator_section = f"\n{creator_context}" if creator_context else ""
         summary_section = f"\n对话背景:\n{stage_zero_summary}\n" if stage_zero_summary else ""
+        market_section = self._build_market_context(kps, creator_context)
 
         extract_system = SYSTEM_PROMPT.format(
             stage_zero_summary=summary_section,
             knowledge_points=kp_context,
             creator_context=creator_section,
+            market_context=market_section,
         ) + "\n\n" + EXTRACT_PROMPT
 
         try:
@@ -280,11 +284,13 @@ class StageOneHandler:
         kp_context = f"\n知识点:\n{json.dumps(kps, ensure_ascii=False)}\n"
         creator_section = f"\n{creator_context}" if creator_context else ""
         summary_section = f"\n对话背景:\n{stage_zero_summary}\n" if stage_zero_summary else ""
+        market_section = self._build_market_context(kps, creator_context)
 
         extract_system = SYSTEM_PROMPT.format(
             stage_zero_summary=summary_section,
             knowledge_points=kp_context,
             creator_context=creator_section,
+            market_context=market_section,
         ) + "\n\n" + EXTRACT_PROMPT
 
         extract_messages = llm_messages + [
@@ -332,3 +338,29 @@ class StageOneHandler:
                 summary_parts.append(f"  - {q}")
 
         return "\n".join(summary_parts)
+
+    def _build_market_context(self, kps: list[dict], creator_context: str) -> str:
+        if not kps:
+            return ""
+        industries = list({kp.get("industry", "") for kp in kps if kp.get("industry")})
+        if not industries:
+            return ""
+        industry = industries[0]
+        kp_types = [kp.get("knowledge_type", "") for kp in kps if kp.get("knowledge_type")]
+        kp_descs = [kp.get("description", "") for kp in kps if kp.get("description")]
+        parts = [f"\n用户所在行业：{industry}"]
+        if kp_descs:
+            parts.append(f"核心经验方向：{'、'.join(kp_descs[:3])}")
+        if kp_types:
+            type_labels = {
+                "price_transparency": "价格信息",
+                "channel_info": "渠道资源",
+                "pitfall_guide": "避坑经验",
+                "skill_sharing": "技能实操",
+                "market_insight": "市场洞察",
+            }
+            labels = [type_labels.get(t, t) for t in kp_types]
+            parts.append(f"变现方向：{'、'.join(labels)}")
+        if creator_context:
+            parts.append("\n已有同行案例数据，在对话中自然引用。")
+        return "\n".join(parts)

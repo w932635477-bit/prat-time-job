@@ -303,3 +303,82 @@ async def test_summarize_stage_zero_empty():
     handler = StageOneHandler.__new__(StageOneHandler)
     assert handler._summarize_stage_zero([]) == ""
     assert handler._summarize_stage_zero([{"role": "assistant", "content": "hi", "stage": 0}]) == ""
+
+
+@pytest.mark.asyncio
+async def test_market_context_in_system_prompt(db):
+    """Stage 1 system prompt includes market context when knowledge points exist."""
+    from starting_point.stages.stage_one import StageOneHandler
+    from starting_point.db.repos import MessageRepo, StateRepo
+
+    msg_repo = MessageRepo(db)
+    state_repo = StateRepo(db)
+    llm = AsyncMock()
+    llm.chat.return_value = "你知不知道，闲鱼上卖建材避坑清单的，9.9元一个月能卖200多单。"
+
+    kps = [
+        {"id": "kp_1", "description": "建材价格透明", "industry": "建材",
+         "knowledge_type": "price_transparency", "target_buyer": "业主",
+         "estimated_value": "省5000元"},
+    ]
+    await state_repo.save("u1", 1, {
+        "status": "completed",
+        "knowledge_points": kps,
+    })
+
+    handler = StageOneHandler(llm, msg_repo, state_repo)
+    result = await handler.handle(user_id="u1", message="我选第一个")
+
+    call_args = llm.chat.call_args
+    system_prompt = call_args.kwargs.get("system", "")
+    assert "建材" in system_prompt
+    assert "闲鱼" in system_prompt
+    assert "价格信息" in system_prompt
+
+
+@pytest.mark.asyncio
+async def test_market_context_empty_without_kps(db):
+    """Stage 1 market_context placeholder is empty when no knowledge points exist."""
+    from starting_point.stages.stage_one import StageOneHandler
+    from starting_point.db.repos import MessageRepo, StateRepo
+
+    msg_repo = MessageRepo(db)
+    state_repo = StateRepo(db)
+    llm = AsyncMock()
+    llm.chat.return_value = "让我帮你看看。"
+
+    await state_repo.save("u1", 1, {
+        "status": "in_progress",
+    })
+
+    handler = StageOneHandler(llm, msg_repo, state_repo)
+    result = await handler.handle(user_id="u1", message="你好")
+
+    call_args = llm.chat.call_args
+    system_prompt = call_args.kwargs.get("system", "")
+    # The market_context placeholder should be empty (no industry-specific data)
+    # but the static SYSTEM_PROMPT still mentions platforms like 闲鱼 as guidance
+    assert "用户所在行业" not in system_prompt
+
+
+@pytest.mark.asyncio
+async def test_build_market_context_helper():
+    """_build_market_context generates industry-specific context."""
+    from starting_point.stages.stage_one import StageOneHandler
+
+    handler = StageOneHandler.__new__(StageOneHandler)
+
+    kps = [
+        {"id": "kp_1", "description": "建材价格", "industry": "建材",
+         "knowledge_type": "price_transparency"},
+        {"id": "kp_2", "description": "渠道信息", "industry": "建材",
+         "knowledge_type": "channel_info"},
+    ]
+    context = handler._build_market_context(kps, "")
+    assert "建材" in context
+    assert "价格信息" in context
+    assert "渠道资源" in context
+    assert "闲鱼" not in context  # market context is industry-specific, not platform list
+
+    empty = handler._build_market_context([], "")
+    assert empty == ""
