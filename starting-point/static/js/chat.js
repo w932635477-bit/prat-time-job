@@ -14,6 +14,20 @@ var Chat = (function () {
     return div.innerHTML;
   }
 
+  function renderMarkdown(text) {
+    var html = escapeHtml(text);
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    html = html.replace(/^---$/gm, '<hr>');
+    html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+    html = html.replace(/(<li>.*<\/li>\n?)+/g, function (match) {
+      return '<ul>' + match + '</ul>';
+    });
+    html = html.replace(/\n{2,}/g, '</p><p>');
+    html = html.replace(/\n/g, '<br>');
+    return '<p>' + html + '</p>';
+  }
+
   function scrollToBottom() {
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   }
@@ -29,7 +43,7 @@ var Chat = (function () {
     row.className = 'chat-row chat-row--ai fade-in';
     var bubble = document.createElement('div');
     bubble.className = 'bubble-ai';
-    bubble.textContent = text;
+    bubble.innerHTML = renderMarkdown(text);
     bubble.setAttribute('role', 'status');
     bubble.setAttribute('aria-live', 'polite');
     row.appendChild(bubble);
@@ -152,9 +166,16 @@ var Chat = (function () {
     btn.addEventListener('click', function () {
       btn.disabled = true;
       btn.textContent = '正在开始...';
+      btn.classList.add('btn-loading');
       var userId = (typeof App !== 'undefined' && App.getUserId) ? App.getUserId() : '';
+      var timeout = setTimeout(function () {
+        btn.disabled = false;
+        btn.textContent = '重试';
+        btn.classList.remove('btn-loading');
+      }, 15000);
       if (userId && nextStep.auto_prompt) {
         sendMessage(userId, nextStep.auto_prompt);
+        setTimeout(function () { clearTimeout(timeout); }, 12000);
       }
     });
 

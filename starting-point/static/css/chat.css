@@ -494,6 +494,29 @@
   transform: none;
 }
 
+.next-step-card__btn.btn-loading {
+  position: relative;
+  padding-left: calc(var(--sp-3) + var(--sp-8));
+}
+
+.next-step-card__btn.btn-loading::before {
+  content: '';
+  position: absolute;
+  left: var(--sp-6);
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  border: 2px solid rgba(10, 10, 11, 0.3);
+  border-top-color: var(--bg-primary);
+  border-radius: 50%;
+  animation: btn-spin 0.6s linear infinite;
+}
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ---- Login card (pre-kit gate) ---- */
 
 .login-card {

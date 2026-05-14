@@ -233,6 +233,14 @@ body {
   margin-bottom: var(--sp-3);
 }
 
+.bubble-ai p { margin: 0 0 var(--sp-2) 0; }
+.bubble-ai p:last-child { margin-bottom: 0; }
+.bubble-ai strong { color: var(--gold); font-weight: 600; }
+.bubble-ai em { font-style: italic; }
+.bubble-ai ul { margin: var(--sp-2) 0; padding-left: var(--sp-5); }
+.bubble-ai li { margin-bottom: var(--sp-1); line-height: 1.6; }
+.bubble-ai hr { border: none; border-top: 1px solid var(--divider); margin: var(--sp-3) 0; }
+
 .bubble-user-option {
   display: inline-block;
   background: var(--gold);
