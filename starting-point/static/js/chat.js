@@ -198,6 +198,11 @@ var Chat = (function () {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId, message: message }),
     }).then(function (resp) {
+      if (resp.status === 401) {
+        var e = new Error('API error: 401');
+        e.isAuthError = true;
+        throw e;
+      }
       if (!resp.ok) {
         throw new Error('API error: ' + resp.status);
       }
@@ -227,6 +232,10 @@ var Chat = (function () {
       })
       .catch(function (err) {
         removeLoading();
+        if (err.isAuthError) {
+          window.location.href = '/login.html';
+          return;
+        }
         messages.appendChild(renderBubbleAi('网络出了点问题，请重试。'));
         console.error('Chat API error:', err);
       })
@@ -303,6 +312,10 @@ var Chat = (function () {
   function loadHistory(userId) {
     fetch('/api/messages/' + encodeURIComponent(userId))
       .then(function (resp) {
+        if (resp.status === 401) {
+          window.location.href = '/login.html';
+          return null;
+        }
         if (!resp.ok) return null;
         return resp.json();
       })
