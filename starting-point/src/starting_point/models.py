@@ -44,6 +44,9 @@ class ProductPackage(BaseModel):
     service_type: Literal["consultation", "content", "service"]
     price_range: PriceRange
     delivery_method: str = Field(min_length=5)
+    service_flow: list[str] = Field(default_factory=list)
+    deliverables: str = ""
+    tools_recommended: list[str] = Field(default_factory=list)
 
 
 class PlatformRecommendation(BaseModel):

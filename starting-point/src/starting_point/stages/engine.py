@@ -61,7 +61,7 @@ class ConversationEngine:
             return result
 
         if current_stage == 1:
-            handler = StageOneHandler(self._llm, self._msg_repo, self._state_repo)
+            handler = StageOneHandler(self._llm, self._msg_repo, self._state_repo, self._prompt_builder)
             result = await handler.handle(user_id, message, creator_context)
             if result.is_complete:
                 # Stage 1 complete, trigger kit generation

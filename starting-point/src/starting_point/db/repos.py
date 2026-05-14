@@ -29,6 +29,15 @@ class MessageRepo:
         rows = await cursor.fetchall()
         return [{"role": row["role"], "content": row["content"]} for row in rows]
 
+    async def load_up_to_stage(self, user_id: str, max_stage: int) -> list[dict[str, str]]:
+        conn = self._db.conn()
+        cursor = await conn.execute(
+            "SELECT role, content, stage FROM messages WHERE user_id = ? AND stage <= ? ORDER BY id",
+            (user_id, max_stage),
+        )
+        rows = await cursor.fetchall()
+        return [{"role": row["role"], "content": row["content"], "stage": row["stage"]} for row in rows]
+
     async def count_by_role(self, user_id: str, stage: int, role: str) -> int:
         conn = self._db.conn()
         cursor = await conn.execute(
