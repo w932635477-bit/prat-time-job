@@ -116,42 +116,7 @@ var Chat = (function () {
     return container;
   }
 
-  // ---- Stage 1 result: product package ----
-
-  function renderLoginCard() {
-    var container = document.createElement('div');
-    container.className = 'login-card fade-in';
-
-    var isWechat = /MicroMessenger/i.test(navigator.userAgent);
-    var pageUrl = window.location.href.split('?')[0];
-
-    if (isWechat) {
-      container.innerHTML =
-        '<div class="login-card__icon">' +
-          '<svg viewBox="0 0 32 32" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5">' +
-            '<path d="M16 8a4 4 0 100 8 4 4 0 000-8z"/>' +
-            '<path d="M4 28c0-6.627 5.373-12 12-12s12 5.373 12 12"/>' +
-          '</svg>' +
-        '</div>' +
-        '<div class="login-card__title">登录以生成启动套件</div>' +
-        '<div class="login-card__desc">你的产品方案已就绪，微信登录后即可生成完整的启动套件。</div>' +
-        '<a href="/api/auth/wechat/login" class="login-card__btn">微信登录</a>';
-    } else {
-      container.innerHTML =
-        '<div class="login-card__title">登录以生成启动套件</div>' +
-        '<div class="login-card__desc">你的产品方案已就绪。请用微信扫描下方二维码打开此页面，完成登录。</div>' +
-        '<div class="login-card__qr">' +
-          '<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(pageUrl) + '" alt="扫码打开" width="180" height="180" />' +
-        '</div>' +
-        '<div class="login-card__hint">长按或扫描二维码，在微信中打开</div>';
-    }
-
-    if (typeof Chat !== 'undefined' && Chat.disableInput) {
-      Chat.disableInput(true);
-    }
-
-    return container;
-  }
+  // ---- Stage 1 result: next step ----
 
   function renderNextStepCard(nextStep) {
     var container = document.createElement('div');
@@ -303,7 +268,7 @@ var Chat = (function () {
       return;
     }
 
-    // Stage 1 complete: product packaged + login card or paywall
+    // Stage 1 complete: product packaged + paywall or kit
     if (data.is_complete && data.stage >= 2) {
       var pkg =
         (data.stage_data && data.stage_data.product_package) || null;
@@ -311,15 +276,10 @@ var Chat = (function () {
         messages.appendChild(renderProductPackage(pkg));
       }
 
-      if (data.is_anonymous) {
-        messages.appendChild(renderLoginCard());
-      } else {
-        // Logged in user: show paywall or complete
-        if (typeof Paywall !== 'undefined' && Paywall.checkAndShow) {
-          Paywall.checkAndShow(App.getUserId(), data);
-        } else if (typeof App !== 'undefined' && App.onStageOneComplete) {
-          App.onStageOneComplete(data);
-        }
+      if (typeof Paywall !== 'undefined' && Paywall.checkAndShow) {
+        Paywall.checkAndShow(App.getUserId(), data);
+      } else if (typeof App !== 'undefined' && App.onStageOneComplete) {
+        App.onStageOneComplete(data);
       }
       scrollToBottom();
       return;
@@ -403,14 +363,6 @@ var Chat = (function () {
     }
   }
 
-  function showLoginCard() {
-    var messages = getMessagesContainer();
-    if (!messages) return;
-    messages.appendChild(renderLoginCard());
-    disableInput(true);
-    scrollToBottom();
-  }
-
   function showPaywallIfNeeded(userId) {
     var tier = 'free';
     try {
@@ -436,7 +388,6 @@ var Chat = (function () {
     renderBubbleAi: renderBubbleAi,
     disableInput: disableInput,
     loadHistory: loadHistory,
-    showLoginCard: showLoginCard,
     showPaywallIfNeeded: showPaywallIfNeeded,
     renderResumeCards: renderResumeCards,
   };

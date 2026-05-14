@@ -74,7 +74,6 @@ class ChatResponse(BaseModel):
     output: dict | None = None
     current_step: int = 0
     next_step: NextStep | None = None
-    is_anonymous: bool = False
 
 
 class User(BaseModel):

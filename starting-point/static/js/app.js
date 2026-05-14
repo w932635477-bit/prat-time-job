@@ -59,8 +59,7 @@ var App = (function () {
   // ---- Session management ----
 
   function ensureSession(callback) {
-    // If just returned from OAuth or QR login, the session cookie was set by the server.
-    // Sync user_id from the server session rather than trusting localStorage.
+    // OAuth return: server has set JWT cookie, sync user_id
     if (localStorage.getItem('sp_auth') === 'wechat') {
       localStorage.removeItem('sp_auth');
       fetch('/api/session', { method: 'GET' })
@@ -71,17 +70,16 @@ var App = (function () {
             sessionReady = true;
             if (callback) callback();
           } else {
-            // No valid session cookie yet, create one for the logged-in user
-            createSessionForUser(getUserId(), callback);
+            window.location.href = '/login.html';
           }
         })
         .catch(function () {
-          createSessionForUser(getUserId(), callback);
+          window.location.href = '/login.html';
         });
       return;
     }
 
-    // Check if existing session is valid
+    // Check existing session
     fetch('/api/session', { method: 'GET' })
       .then(function (resp) { return resp.json(); })
       .then(function (data) {
@@ -91,44 +89,11 @@ var App = (function () {
           if (callback) callback();
           return;
         }
-        createAnonymousSession(callback);
+        // Not authenticated -> redirect to login
+        window.location.href = '/login.html';
       })
       .catch(function () {
-        createAnonymousSession(callback);
-      });
-  }
-
-  function createSessionForUser(userId, callback) {
-    fetch('/api/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId }),
-    })
-      .then(function (resp) { return resp.json(); })
-      .then(function () {
-        sessionReady = true;
-        if (callback) callback();
-      })
-      .catch(function () {
-        sessionReady = true;
-        if (callback) callback();
-      });
-  }
-
-  function createAnonymousSession(callback) {
-    fetch('/api/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: getUserId() }),
-    })
-      .then(function (resp) { return resp.json(); })
-      .then(function () {
-        sessionReady = true;
-        if (callback) callback();
-      })
-      .catch(function () {
-        sessionReady = true;
-        if (callback) callback();
+        window.location.href = '/login.html';
       });
   }
 
@@ -194,6 +159,9 @@ var App = (function () {
   // ---- Start chat ----
 
   function startChat() {
+    if (sessionStorage.getItem('sp_greeting_sent')) return;
+    sessionStorage.setItem('sp_greeting_sent', '1');
+
     showView('chat');
     initChatInput();
     updateProgress(0, 0);
@@ -279,7 +247,6 @@ var App = (function () {
         if (data.status === 'completed') {
           showView('kit');
           updateProgress(2, 1);
-          Kit.renderKit = Kit.renderKit;
           fetch('/api/kit/' + encodeURIComponent(userId))
             .then(function (r) { return r.json(); })
             .then(function (kit) {
@@ -297,19 +264,15 @@ var App = (function () {
             .then(function (state) {
               if (state && state.current_stage != null) {
                 var stage = state.current_stage || 0;
+                sessionStorage.setItem('sp_greeting_sent', '1');
                 resumeChat(stage);
                 Chat.loadHistory(userId);
 
-                if (stage >= 2 && state.is_anonymous) {
+                if (stage >= 2) {
                   var sd = state.stage_data || {};
                   var kps = sd.knowledge_points || [];
                   var pkg = sd.product_package || null;
                   Chat.renderResumeCards(kps, pkg);
-                  Chat.showLoginCard();
-                } else if (stage >= 2 && !state.is_anonymous) {
-                  var sd2 = state.stage_data || {};
-                  var pkg2 = sd2.product_package || null;
-                  if (pkg2) Chat.renderResumeCards([], pkg2);
                   Chat.showPaywallIfNeeded(userId);
                 }
               }

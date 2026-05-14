@@ -230,7 +230,6 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
     user = await user_repo.get_user(req.user_id)
     tier = user.tier if user else "free"
     tier_expires_at = user.tier_expires_at if user else None
-    is_anonymous = (user is None or not user.wx_openid or user.wx_openid == "")
 
     result = await engine.handle(
         user_id=req.user_id,
@@ -238,7 +237,6 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
         tier=tier,
         tier_expires_at=tier_expires_at,
     )
-    result.is_anonymous = is_anonymous
     return result
 
 
@@ -277,11 +275,8 @@ async def get_state(user_id: str, request: Request):
     state_repo = StateRepo(db)
     state = await state_repo.load(user_id)
     if state is None:
-        return {"current_stage": None, "is_anonymous": True}
-    user_repo: UserRepo = request.app.state.user_repo
-    user = await user_repo.get_user(user_id)
-    is_anonymous = (user is None or not user.wx_openid or user.wx_openid == "")
-    return {**state, "is_anonymous": is_anonymous}
+        return {"current_stage": None}
+    return state
 
 
 @app.get("/api/messages/{user_id}")
