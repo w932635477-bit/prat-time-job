@@ -362,12 +362,18 @@ class StageOneHandler:
     async def _load_peer_examples(self, kps: list[dict]) -> list[dict]:
         if self._creator_repo is None or not kps:
             return []
-        industries = list({kp.get("industry", "") for kp in kps if kp.get("industry")})
-        for industry in industries:
+        raw_industries = {kp.get("industry", "") for kp in kps if kp.get("industry")}
+        keywords: list[str] = []
+        for raw in raw_industries:
+            for part in raw.replace("/", " ").split():
+                part = part.strip()
+                if len(part) >= 2 and part not in keywords:
+                    keywords.append(part)
+        for keyword in keywords:
             try:
-                creators = await self._creator_repo.search(industry, limit=3)
+                creators = await self._creator_repo.search(keyword, limit=3)
             except Exception:
-                logger.warning("Failed to load peer examples for industry: %s", industry)
+                logger.warning("Failed to load peer examples for keyword: %s", keyword)
                 continue
             if creators:
                 return [
