@@ -369,24 +369,39 @@ class StageOneHandler:
                 part = part.strip()
                 if len(part) >= 2 and part not in keywords:
                     keywords.append(part)
+        # Also try broader industry hints from user messages
+        industry_hints = {
+            "家装": "建材", "涂料": "建材", "油漆": "建材", "瓷砖": "建材",
+            "墙面": "建材", "地板": "建材", "水电": "建材", "装修": "建材",
+            "面点": "餐饮", "包子": "餐饮", "早餐": "餐饮",
+            "月嫂": "家政", "保洁": "家政", "育婴": "家政",
+        }
+        for kw in list(keywords):
+            mapped = industry_hints.get(kw)
+            if mapped and mapped not in keywords:
+                keywords.append(mapped)
+        seen_ids: set[int] = set()
+        all_examples: list[dict] = []
         for keyword in keywords:
+            if len(all_examples) >= 3:
+                break
             try:
-                creators = await self._creator_repo.search(keyword, limit=3)
+                creators = await self._creator_repo.search(keyword, limit=6)
             except Exception:
                 logger.warning("Failed to load peer examples for keyword: %s", keyword)
                 continue
-            if creators:
-                return [
-                    {
-                        "name": c.account_name,
-                        "platform": c.platform or "抖音",
-                        "method": ", ".join(c.monetization_methods) if c.monetization_methods else "经验变现",
-                        "income": c.revenue_estimate or "未公开",
-                        "followers": c.follower_tier or "未公开",
-                    }
-                    for c in creators
-                ]
-        return []
+            for c in creators:
+                if c.id in seen_ids or len(all_examples) >= 3:
+                    continue
+                seen_ids.add(c.id)
+                all_examples.append({
+                    "name": c.account_name,
+                    "platform": c.platform or "抖音",
+                    "method": ", ".join(c.monetization_methods) if c.monetization_methods else "经验变现",
+                    "income": c.revenue_estimate or "未公开",
+                    "followers": c.follower_tier or "未公开",
+                })
+        return all_examples
 
     def _format_peer_examples(self, peer_examples: list[dict]) -> str:
         if not peer_examples:
