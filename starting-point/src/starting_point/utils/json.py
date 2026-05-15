@@ -9,8 +9,14 @@ def extract_json(text: str) -> dict | None:
 
     Handles truncated output by attempting to auto-close brackets.
     """
+    # Try to find a ```json ... ``` block (complete)
     json_block = re.search(r"```json\s*\n(.*?)\n?```", text, re.DOTALL)
-    raw = json_block.group(1) if json_block else text
+    if json_block:
+        raw = json_block.group(1)
+    else:
+        # Try incomplete block: ```json ... (no closing ```)
+        incomplete = re.search(r"```json\s*\n(.*)", text, re.DOTALL)
+        raw = incomplete.group(1) if incomplete else text
 
     # First try: parse as-is
     try:
