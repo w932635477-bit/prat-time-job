@@ -27,6 +27,9 @@ _PLAN_SIGNALS = (
     "你的产品方案",
     "就这么定了",
     "产品方案已经",
+    "你的第一个产品",
+    "产品包装方案",
+    "最终方案",
 )
 
 
@@ -264,9 +267,9 @@ class StageOneHandler:
 
     def _has_plan_summary(self, response: str) -> bool:
         """Check if the LLM response contains a structured product plan."""
-        response_lower = response.lower()
         return any(signal in response for signal in _PLAN_SIGNALS) or (
-            "**产品" in response and "**定价" in response
+            ("产品" in response and "定价" in response)
+            and ("**" in response or "###" in response or "\n" in response)
         )
 
     async def _try_extract(
