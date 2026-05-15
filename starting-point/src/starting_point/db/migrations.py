@@ -96,6 +96,17 @@ async def run_migrations(db: object) -> None:
         );
         CREATE INDEX IF NOT EXISTS idx_creators_category ON creator_examples(category);
 
+        -- Add platform and revenue_estimate columns to creator_examples (2026-05-15)
+        """)
+    # SQLite doesn't support IF NOT EXISTS for ALTER TABLE ADD COLUMN
+    cursor = await conn.execute("PRAGMA table_info(creator_examples)")
+    col_names = {row[1] for row in await cursor.fetchall()}
+    if 'platform' not in col_names:
+        await conn.execute("ALTER TABLE creator_examples ADD COLUMN platform TEXT NOT NULL DEFAULT ''")
+    if 'revenue_estimate' not in col_names:
+        await conn.execute("ALTER TABLE creator_examples ADD COLUMN revenue_estimate TEXT NOT NULL DEFAULT ''")
+    await conn.executescript("""
+
         -- Fix: allow anonymous users (wx_openid can be NULL)
         -- SQLite doesn't support ALTER COLUMN, so recreate the table if needed
         """)

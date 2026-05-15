@@ -42,6 +42,8 @@ class ProductPackage(BaseModel):
     one_liner: str = Field(min_length=5)
     target_buyer: str = Field(min_length=5)
     service_type: Literal["consultation", "content", "service"]
+    platform: str = ""
+    platform_username_ref: str = ""
     price_range: PriceRange
     delivery_method: str = Field(min_length=5)
     service_flow: list[str] = Field(default_factory=list)
@@ -251,6 +253,8 @@ class CreatorExample(BaseModel):
     origin_story: str = ""
     user_profile_tags: list[str] = Field(default_factory=list)
     content_style: str = ""
+    platform: str = ""
+    revenue_estimate: str = ""
     is_active: bool = True
 
 

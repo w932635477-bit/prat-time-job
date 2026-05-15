@@ -46,11 +46,13 @@ class StageOneHandler:
         msg_repo: MessageRepo,
         state_repo: StateRepo,
         prompt_builder: PromptBuilder | None = None,
+        creator_repo: object | None = None,
     ) -> None:
         self._llm = llm
         self._msg_repo = msg_repo
         self._state_repo = state_repo
         self._prompt_builder = prompt_builder or PromptBuilder()
+        self._creator_repo = creator_repo
 
     async def handle(self, user_id: str, message: str, creator_context: str = "") -> ChatResponse:
         await self._msg_repo.save(user_id, "user", message, stage=1)
@@ -64,18 +66,20 @@ class StageOneHandler:
         stage_zero_history = await self._msg_repo.load_up_to_stage(user_id, 0)
         stage_zero_summary = self._summarize_stage_zero(stage_zero_history)
 
+        peer_examples = await self._load_peer_examples(kps)
+
         stage_one_history = await self._msg_repo.load(user_id, 1)
         llm_messages = [{"role": h["role"], "content": h["content"]} for h in stage_one_history]
 
         if msg_count < MAX_STAGE1_MESSAGES:
             return await self._conversation_turn(
                 user_id, llm_messages, kps, stage_data, msg_count,
-                stage_zero_summary, creator_context,
+                stage_zero_summary, creator_context, peer_examples,
             )
 
         return await self._extract_and_complete(
             user_id, llm_messages, kps, stage_data, msg_count,
-            stage_zero_summary, creator_context,
+            stage_zero_summary, creator_context, peer_examples,
         )
 
     async def _conversation_turn(
@@ -87,17 +91,20 @@ class StageOneHandler:
         msg_count: int,
         stage_zero_summary: str,
         creator_context: str,
+        peer_examples: list[dict],
     ) -> ChatResponse:
         kp_context = f"\n已识别的可变现知识点:\n{json.dumps(kps, ensure_ascii=False, indent=2)}\n"
         creator_section = f"\n{creator_context}" if creator_context else ""
         summary_section = f"\n你们之前的对话摘要:\n{stage_zero_summary}\n" if stage_zero_summary else ""
-        market_section = self._build_market_context(kps, creator_context)
+        market_section = self._build_market_context(kps, creator_context, peer_examples)
+        peer_section = self._format_peer_examples(peer_examples)
 
         system = SYSTEM_PROMPT.format(
             stage_zero_summary=summary_section,
             knowledge_points=kp_context,
             creator_context=creator_section,
             market_context=market_section,
+            peer_examples=peer_section,
         )
 
         if msg_count >= MIN_STAGE1_MESSAGES:
@@ -115,7 +122,7 @@ class StageOneHandler:
         if msg_count >= MIN_STAGE1_MESSAGES and self._has_plan_summary(response):
             extract_result = await self._try_extract(
                 user_id, llm_messages, kps, stage_data, msg_count,
-                stage_zero_summary, creator_context, response,
+                stage_zero_summary, creator_context, peer_examples, response,
             )
             if extract_result is not None:
                 return extract_result
@@ -138,6 +145,7 @@ class StageOneHandler:
         msg_count: int,
         stage_zero_summary: str,
         creator_context: str,
+        peer_examples: list[dict],
     ) -> ChatResponse:
         extract_messages = llm_messages + [
             {"role": "user", "content": "请基于我们的对话，给出完整的产品包装方案。"},
@@ -146,13 +154,15 @@ class StageOneHandler:
         kp_context = f"\n知识点:\n{json.dumps(kps, ensure_ascii=False)}\n"
         creator_section = f"\n{creator_context}" if creator_context else ""
         summary_section = f"\n对话背景:\n{stage_zero_summary}\n" if stage_zero_summary else ""
-        market_section = self._build_market_context(kps, creator_context)
+        market_section = self._build_market_context(kps, creator_context, peer_examples)
+        peer_section = self._format_peer_examples(peer_examples)
 
         extract_system = SYSTEM_PROMPT.format(
             stage_zero_summary=summary_section,
             knowledge_points=kp_context,
             creator_context=creator_section,
             market_context=market_section,
+            peer_examples=peer_section,
         ) + "\n\n" + EXTRACT_PROMPT
 
         try:
@@ -192,6 +202,10 @@ class StageOneHandler:
             f"**建议定价：** {package.price_range.min}-{package.price_range.max} 元\n"
             f"**交付方式：** {package.delivery_method}"
         )
+        if package.platform:
+            summary += f"\n**目标平台：** {package.platform}"
+        if package.platform_username_ref:
+            summary += f"\n**学习榜样：** {package.platform_username_ref}"
 
         return ChatResponse(
             message=summary,
@@ -281,19 +295,22 @@ class StageOneHandler:
         msg_count: int,
         stage_zero_summary: str,
         creator_context: str,
+        peer_examples: list[dict],
         last_response: str,
     ) -> ChatResponse | None:
         """Attempt early extraction. Returns None if extraction fails."""
         kp_context = f"\n知识点:\n{json.dumps(kps, ensure_ascii=False)}\n"
         creator_section = f"\n{creator_context}" if creator_context else ""
         summary_section = f"\n对话背景:\n{stage_zero_summary}\n" if stage_zero_summary else ""
-        market_section = self._build_market_context(kps, creator_context)
+        market_section = self._build_market_context(kps, creator_context, peer_examples)
+        peer_section = self._format_peer_examples(peer_examples)
 
         extract_system = SYSTEM_PROMPT.format(
             stage_zero_summary=summary_section,
             knowledge_points=kp_context,
             creator_context=creator_section,
             market_context=market_section,
+            peer_examples=peer_section,
         ) + "\n\n" + EXTRACT_PROMPT
 
         extract_messages = llm_messages + [
@@ -342,6 +359,44 @@ class StageOneHandler:
 
         return "\n".join(summary_parts)
 
+    async def _load_peer_examples(self, kps: list[dict]) -> list[dict]:
+        if self._creator_repo is None or not kps:
+            return []
+        industries = list({kp.get("industry", "") for kp in kps if kp.get("industry")})
+        for industry in industries:
+            try:
+                creators = await self._creator_repo.search(industry, limit=3)
+            except Exception:
+                logger.warning("Failed to load peer examples for industry: %s", industry)
+                continue
+            if creators:
+                return [
+                    {
+                        "name": c.account_name,
+                        "platform": c.platform or "抖音",
+                        "method": ", ".join(c.monetization_methods) if c.monetization_methods else "经验变现",
+                        "income": c.revenue_estimate or "未公开",
+                        "followers": c.follower_tier or "未公开",
+                    }
+                    for c in creators
+                ]
+        return []
+
+    def _format_peer_examples(self, peer_examples: list[dict]) -> str:
+        if not peer_examples:
+            return ""
+        lines = ["## 同行赚钱案例", ""]
+        lines.append("以下是与你同行业的真实案例，他们已经在用经验赚钱：")
+        lines.append("")
+        for i, ex in enumerate(peer_examples, 1):
+            lines.append(f"{i}. **{ex['name']}**（{ex['platform']}）")
+            lines.append(f"   - 做法：{ex['method']}")
+            lines.append(f"   - 收入：{ex['income']}")
+            if ex.get("followers") and ex["followers"] != "未公开":
+                lines.append(f"   - 粉丝：{ex['followers']}")
+            lines.append("")
+        return "\n".join(lines)
+
     def _is_product_proposal(self, content: str) -> bool:
         signals = (
             "产品一", "产品二", "产品三",
@@ -354,7 +409,7 @@ class StageOneHandler:
         matches = sum(1 for s in signals if s in content)
         return matches >= 2 and len(content) > 50
 
-    def _build_market_context(self, kps: list[dict], creator_context: str) -> str:
+    def _build_market_context(self, kps: list[dict], creator_context: str, peer_examples: list[dict]) -> str:
         if not kps:
             return ""
         industries = list({kp.get("industry", "") for kp in kps if kp.get("industry")})

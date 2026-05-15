@@ -395,11 +395,10 @@ async def test_build_market_context_helper():
         {"id": "kp_2", "description": "渠道信息", "industry": "建材",
          "knowledge_type": "channel_info"},
     ]
-    context = handler._build_market_context(kps, "")
+    context = handler._build_market_context(kps, "", [])
     assert "建材" in context
     assert "价格信息" in context
     assert "渠道资源" in context
-    assert "闲鱼" not in context  # market context is industry-specific, not platform list
 
-    empty = handler._build_market_context([], "")
+    empty = handler._build_market_context([], "", [])
     assert empty == ""

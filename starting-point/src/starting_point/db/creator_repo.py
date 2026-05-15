@@ -97,5 +97,7 @@ class CreatorRepo:
             origin_story=row["origin_story"],
             user_profile_tags=json.loads(row["user_profile_tags"]),
             content_style=row["content_style"],
+            platform=row["platform"] if "platform" in row.keys() else "",
+            revenue_estimate=row["revenue_estimate"] if "revenue_estimate" in row.keys() else "",
             is_active=bool(row["is_active"]),
         )
