@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+from pathlib import Path
 
 from pydantic import ValidationError
 
@@ -10,6 +11,7 @@ from starting_point.llm.prompts import PromptBuilder
 from starting_point.db.repos import MessageRepo, StateRepo
 from starting_point.models import ProductPackage, ChatResponse, NextStep
 from starting_point.prompts.stage_one import SYSTEM_PROMPT, EXTRACT_PROMPT, READINESS_CHECK_SUFFIX
+from starting_point.wiki import get_wiki_content, HINTS as WIKI_HINTS
 
 logger = logging.getLogger(__name__)
 
@@ -193,6 +195,7 @@ class StageOneHandler:
             "user_message_count": msg_count,
         }
         await self._state_repo.save(user_id, 2, new_stage_data)
+        self._log_interaction(user_id, new_stage_data, force_completed=False)
 
         summary = (
             f"你的产品方案已经整理好了！\n\n"
@@ -257,6 +260,7 @@ class StageOneHandler:
             "force_completed": True,
         }
         await self._state_repo.save(user_id, 2, new_stage_data)
+        self._log_interaction(user_id, new_stage_data, force_completed=True)
 
         summary = (
             f"我已经根据咱们的对话整理了一个初步方案：\n\n"
@@ -369,15 +373,9 @@ class StageOneHandler:
                 part = part.strip()
                 if len(part) >= 2 and part not in keywords:
                     keywords.append(part)
-        # Also try broader industry hints from user messages
-        industry_hints = {
-            "家装": "建材", "涂料": "建材", "油漆": "建材", "瓷砖": "建材",
-            "墙面": "建材", "地板": "建材", "水电": "建材", "装修": "建材",
-            "面点": "餐饮", "包子": "餐饮", "早餐": "餐饮",
-            "月嫂": "家政", "保洁": "家政", "育婴": "家政",
-        }
+        # Also try broader industry hints from wiki shared mapping
         for kw in list(keywords):
-            mapped = industry_hints.get(kw)
+            mapped = WIKI_HINTS.get(kw)
             if mapped and mapped not in keywords:
                 keywords.append(mapped)
         seen_ids: set[int] = set()
@@ -418,6 +416,36 @@ class StageOneHandler:
             lines.append("")
         return "\n".join(lines)
 
+    def _log_interaction(
+        self, user_id: str, stage_data: dict, *, force_completed: bool,
+    ) -> None:
+        """Append Stage 1 outcome to JSONL interaction log."""
+        from datetime import datetime, timezone
+
+        log_dir = Path(__file__).resolve().parent.parent.parent.parent / "data" / "interactions"
+        log_dir.mkdir(parents=True, exist_ok=True)
+
+        kps = stage_data.get("knowledge_points", [])
+        pkg = stage_data.get("product_package", {})
+        industry = kps[0].get("industry", "") if kps else ""
+
+        entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "user_id_hash": user_id[:8],
+            "industry": industry,
+            "knowledge_types": [kp.get("knowledge_type", "") for kp in kps],
+            "product_name": pkg.get("product_name", ""),
+            "price_min": (pkg.get("price_range") or {}).get("min"),
+            "price_max": (pkg.get("price_range") or {}).get("max"),
+            "delivery_method": pkg.get("delivery_method", ""),
+            "platform": pkg.get("platform", ""),
+            "msg_count": stage_data.get("user_message_count", 0),
+            "force_completed": force_completed,
+        }
+        log_file = log_dir / f"stage1_{datetime.now(timezone.utc).strftime('%Y%m')}.jsonl"
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
     def _is_product_proposal(self, content: str) -> bool:
         signals = (
             "产品一", "产品二", "产品三",
@@ -454,4 +482,9 @@ class StageOneHandler:
             parts.append(f"变现方向：{'、'.join(labels)}")
         if creator_context:
             parts.append("\n已有同行案例数据，在对话中自然引用。")
+
+        wiki_content = get_wiki_content(industry)
+        if wiki_content:
+            parts.append(f"\n## 行业深度知识（来自知识库）\n{wiki_content}\n")
+
         return "\n".join(parts)
