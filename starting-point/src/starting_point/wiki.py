@@ -70,3 +70,66 @@ def get_wiki_content(industry: str, max_chars: int = 1500) -> str:
         else:
             content = cut.rsplit("\n", 1)[0]
     return content
+
+
+def parse_wiki_sections(industry: str) -> dict[str, str]:
+    """Parse a wiki page into named sections by ## headings.
+
+    Returns a dict mapping section heading (without leading #) to content.
+    Falls back through exact → fuzzy → general.
+    """
+    raw = (
+        read_industry_page(industry)
+        or read_industry_page_fuzzy(industry)
+        or read_general_page()
+    )
+    if not raw:
+        return {}
+    sections: dict[str, str] = {}
+    current_heading = ""
+    current_lines: list[str] = []
+    for line in raw.split("\n"):
+        if line.startswith("## "):
+            if current_heading:
+                sections[current_heading] = "\n".join(current_lines).strip()
+            current_heading = line.lstrip("#").strip()
+            current_lines = []
+        else:
+            current_lines.append(line)
+    if current_heading:
+        sections[current_heading] = "\n".join(current_lines).strip()
+    return sections
+
+
+def _resolve_section_key(available: dict[str, str], name: str) -> str:
+    """Match a section name against available keys.
+
+    Tries exact match first, then prefix match (e.g. "变现路径" matches
+    "变现路径（按起步难度排序）").
+    """
+    if name in available:
+        return name
+    for key in available:
+        if key.startswith(name) or name.startswith(key):
+            return key
+    return ""
+
+
+def get_wiki_sections(industry: str, section_names: list[str] | None = None) -> str:
+    """Return selected wiki sections joined with headers.
+
+    If section_names is None, returns all sections (full page).
+    Missing sections are silently skipped. Section names support prefix
+    matching (e.g. "获客渠道" matches "获客渠道（按行业特点推荐）").
+    """
+    sections = parse_wiki_sections(industry)
+    if not sections:
+        return ""
+    if section_names is None:
+        return "\n\n".join(f"## {k}\n{v}" for k, v in sections.items())
+    parts: list[str] = []
+    for name in section_names:
+        resolved = _resolve_section_key(sections, name)
+        if resolved:
+            parts.append(f"## {resolved}\n{sections[resolved]}")
+    return "\n\n".join(parts)

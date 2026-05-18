@@ -96,7 +96,7 @@ READINESS_CHECK_SUFFIX = """
 EXTRACT_PROMPT = """基于以上对话内容，提取产品包装方案。只输出JSON，不要输出任何其他文字。
 
 ```json
-{
+{{
   "selected_knowledge_id": "kp_X",
   "product_name": "产品名称（简洁有力，5个字以内）",
   "one_liner": "一句话价值描述",
@@ -104,12 +104,12 @@ EXTRACT_PROMPT = """基于以上对话内容，提取产品包装方案。只输
   "service_type": "consultation | content | service",
   "platform": "目标平台（抖音/小红书/闲鱼/微信）",
   "platform_username_ref": "用户选择的同行榜样账号名",
-  "price_range": {"min": 49, "max": 199, "currency": "CNY"},
+  "price_range": {{"min": 49, "max": 199, "currency": "CNY"}},
   "delivery_method": "交付方式描述",
   "service_flow": ["步骤1", "步骤2", "步骤3"],
   "deliverables": "客户具体得到什么（比如清单、报告、话术等）",
   "tools_recommended": ["推荐工具1", "推荐工具2"]
-}
+}}
 ```
 
 重要规则：
@@ -118,4 +118,5 @@ EXTRACT_PROMPT = """基于以上对话内容，提取产品包装方案。只输
 - service_flow: 根据对话中提到的服务流程，拆解为3-5个步骤。比如"先发清单再语音沟通"就拆成["发送避坑清单", "45分钟语音沟通", "后续微信答疑"]
 - deliverables: 从对话中找到客户具体能拿到的东西。比如避坑清单、价格参考表、砍价话术
 - tools_recommended: 根据服务类型推荐实用工具。咨询类推荐微信/电话；内容类推荐文档工具
-- 从对话中提取真实信息，不要编造。如果某些字段信息不足，根据上下文推断合理的值"""
+- 从对话中提取真实信息，不要编造。如果某些字段信息不足，根据上下文推断合理的值
+{industry_templates_ref}"""

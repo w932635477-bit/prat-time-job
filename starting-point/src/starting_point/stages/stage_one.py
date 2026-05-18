@@ -11,7 +11,7 @@ from starting_point.llm.prompts import PromptBuilder
 from starting_point.db.repos import MessageRepo, StateRepo
 from starting_point.models import ProductPackage, ChatResponse, NextStep
 from starting_point.prompts.stage_one import SYSTEM_PROMPT, EXTRACT_PROMPT, READINESS_CHECK_SUFFIX
-from starting_point.wiki import get_wiki_content, HINTS as WIKI_HINTS
+from starting_point.wiki import get_wiki_content, get_wiki_sections, parse_wiki_sections, HINTS as WIKI_HINTS
 from starting_point.insights import extract_insights, log_insight
 
 logger = logging.getLogger(__name__)
@@ -139,6 +139,20 @@ class StageOneHandler:
             is_complete=False,
         )
 
+    def _get_industry_templates_ref(self, kps: list[dict]) -> str:
+        """Build the industry templates reference for EXTRACT_PROMPT."""
+        industries = list({kp.get("industry", "") for kp in kps if kp.get("industry")})
+        if not industries:
+            return ""
+        industry = industries[0]
+        templates = get_wiki_sections(industry, ["产品包装模板"])
+        if not templates:
+            return ""
+        return (
+            "\n\n参考下方行业产品包装模板，选择最匹配用户情况的标准方案作为基础，再根据对话内容微调：\n"
+            + templates
+        )
+
     async def _extract_and_complete(
         self,
         user_id: str,
@@ -159,6 +173,7 @@ class StageOneHandler:
         summary_section = f"\n对话背景:\n{stage_zero_summary}\n" if stage_zero_summary else ""
         market_section = self._build_market_context(kps, creator_context, peer_examples)
         peer_section = self._format_peer_examples(peer_examples)
+        templates_ref = self._get_industry_templates_ref(kps)
 
         extract_system = SYSTEM_PROMPT.format(
             stage_zero_summary=summary_section,
@@ -166,7 +181,7 @@ class StageOneHandler:
             creator_context=creator_section,
             market_context=market_section,
             peer_examples=peer_section,
-        ) + "\n\n" + EXTRACT_PROMPT
+        ) + "\n\n" + EXTRACT_PROMPT.format(industry_templates_ref=templates_ref)
 
         try:
             validated = await self._llm.chat_json(
@@ -311,6 +326,7 @@ class StageOneHandler:
         summary_section = f"\n对话背景:\n{stage_zero_summary}\n" if stage_zero_summary else ""
         market_section = self._build_market_context(kps, creator_context, peer_examples)
         peer_section = self._format_peer_examples(peer_examples)
+        templates_ref = self._get_industry_templates_ref(kps)
 
         extract_system = SYSTEM_PROMPT.format(
             stage_zero_summary=summary_section,
@@ -318,7 +334,7 @@ class StageOneHandler:
             creator_context=creator_section,
             market_context=market_section,
             peer_examples=peer_section,
-        ) + "\n\n" + EXTRACT_PROMPT
+        ) + "\n\n" + EXTRACT_PROMPT.format(industry_templates_ref=templates_ref)
 
         extract_messages = llm_messages + [
             {"role": "user", "content": "请基于我们的对话，给出完整的产品包装方案。"},
@@ -513,8 +529,27 @@ class StageOneHandler:
         if creator_context:
             parts.append("\n已有同行案例数据，在对话中自然引用。")
 
-        wiki_content = get_wiki_content(industry)
-        if wiki_content:
-            parts.append(f"\n## 行业深度知识（来自知识库）\n{wiki_content}\n")
+        sections = self._select_relevant_sections(industry, kp_types, peer_examples)
+        if sections:
+            parts.append(f"\n## 行业深度知识（来自知识库）\n{sections}\n")
 
         return "\n".join(parts)
+
+    def _select_relevant_sections(
+        self, industry: str, kp_types: list[str], peer_examples: list[dict],
+    ) -> str:
+        """Pick wiki sections relevant to the current conversation context."""
+        always_sections = ["常见可变现知识点", "变现路径"]
+        conditional: list[str] = []
+        if peer_examples:
+            conditional.append("同行案例拆解")
+        if "price_transparency" in kp_types or "market_insight" in kp_types:
+            conditional.append("定价参考")
+        conditional.append("获客渠道")
+        conditional.append("用户常见顾虑")
+
+        desired = always_sections + conditional
+        content = get_wiki_sections(industry, desired)
+        if content:
+            return content
+        return get_wiki_content(industry)
