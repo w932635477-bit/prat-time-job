@@ -110,7 +110,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 # In-memory rate limiter: sliding window per client IP
 _RATE_LIMITS: dict[str, list[float]] = defaultdict(list)
-_RATE_MAX_REQUESTS = 60
+_RATE_MAX_REQUESTS = 120
 _RATE_WINDOW_SECONDS = 60
 
 # Stricter limits for sensitive endpoints
@@ -135,7 +135,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         timestamps = _RATE_LIMITS[key]
 
         if len(timestamps) >= max_req:
-            raise HTTPException(status_code=429, detail="Too many requests")
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Too many requests"},
+            )
 
         _RATE_LIMITS[key].append(now)
         response = await call_next(request)
