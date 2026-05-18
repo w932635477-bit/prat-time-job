@@ -8,12 +8,16 @@ from pydantic import ValidationError
 from starting_point.llm.client import LLMClient
 from starting_point.db.repos import MessageRepo, StateRepo
 from starting_point.models import StageZeroOutput, ChatResponse, NextStep
-from starting_point.prompts.stage_zero import SYSTEM_PROMPT, FORCE_EXTRACT_SUFFIX
+from starting_point.prompts.stage_zero import SYSTEM_PROMPT, FORCE_EXTRACT_SUFFIX, WIKI_USAGE_NOTE
 from starting_point.utils.json import extract_json
+from starting_point.wiki import HINTS, get_wiki_sections
 
 logger = logging.getLogger(__name__)
 
 MAX_STAGE0_MESSAGES = 10
+
+# Sections useful for discovery probing (lighter than Stage 1)
+_STAGE0_WIKI_SECTIONS = ["常见可变现知识点", "同行案例拆解", "用户常见顾虑"]
 
 
 class StageZeroHandler:
@@ -59,8 +63,13 @@ class StageZeroHandler:
         # Build messages for LLM
         llm_messages = [{"role": h["role"], "content": h["content"]} for h in history]
 
+        # Inject wiki knowledge base into system prompt
+        wiki_context = self._build_wiki_context(llm_messages)
+
         # Determine if force-extract mode
         system_prompt = SYSTEM_PROMPT
+        if wiki_context:
+            system_prompt += wiki_context + WIKI_USAGE_NOTE
         if creator_context:
             system_prompt += creator_context
         if user_msg_count >= MAX_STAGE0_MESSAGES:
@@ -97,6 +106,30 @@ class StageZeroHandler:
             stage_data=new_stage_data,
             is_complete=False,
         )
+
+    @staticmethod
+    def _detect_industry(messages: list[dict]) -> str:
+        """Scan conversation for industry keywords, return wiki page name or empty string."""
+        all_text = " ".join(m.get("content", "") for m in messages)
+        # Direct industry page name match (highest priority)
+        for name in ("建材", "餐饮", "家政", "内容变现实战案例"):
+            if name in all_text:
+                return name
+        # Keyword-to-industry mapping
+        for keyword, mapped in HINTS.items():
+            if keyword in all_text:
+                return mapped
+        return ""
+
+    def _build_wiki_context(self, messages: list[dict]) -> str:
+        """Load relevant wiki sections based on detected industry."""
+        industry = self._detect_industry(messages)
+        if not industry:
+            return ""
+        sections = get_wiki_sections(industry, _STAGE0_WIKI_SECTIONS)
+        if not sections:
+            return ""
+        return f"\n\n## 行业知识库（{industry}）\n{sections}"
 
     async def _handle_json_output(
         self,
