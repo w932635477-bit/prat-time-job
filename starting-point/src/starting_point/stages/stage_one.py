@@ -12,6 +12,7 @@ from starting_point.db.repos import MessageRepo, StateRepo
 from starting_point.models import ProductPackage, ChatResponse, NextStep
 from starting_point.prompts.stage_one import SYSTEM_PROMPT, EXTRACT_PROMPT, READINESS_CHECK_SUFFIX
 from starting_point.wiki import get_wiki_content, HINTS as WIKI_HINTS
+from starting_point.insights import extract_insights, log_insight
 
 logger = logging.getLogger(__name__)
 
@@ -196,6 +197,7 @@ class StageOneHandler:
         }
         await self._state_repo.save(user_id, 2, new_stage_data)
         self._log_interaction(user_id, new_stage_data, force_completed=False)
+        self._fire_extract_insights(user_id, new_stage_data)
 
         summary = (
             f"你的产品方案已经整理好了！\n\n"
@@ -261,6 +263,7 @@ class StageOneHandler:
         }
         await self._state_repo.save(user_id, 2, new_stage_data)
         self._log_interaction(user_id, new_stage_data, force_completed=True)
+        self._fire_extract_insights(user_id, new_stage_data)
 
         summary = (
             f"我已经根据咱们的对话整理了一个初步方案：\n\n"
@@ -415,6 +418,33 @@ class StageOneHandler:
                 lines.append(f"   - 粉丝：{ex['followers']}")
             lines.append("")
         return "\n".join(lines)
+
+    def _fire_extract_insights(self, user_id: str, stage_data: dict) -> None:
+        """Background insight extraction. Fire-and-forget: errors are logged, not raised."""
+        import asyncio
+
+        async def _do() -> None:
+            history = await self._msg_repo.load(user_id, 1)
+            if not history:
+                return
+            is_forced = stage_data.get("force_completed", False)
+            data_with_hash = {**stage_data, "user_id_hash": user_id[:8]}
+            entry = await extract_insights(
+                self._llm, history, data_with_hash, force_completed=is_forced,
+            )
+            if entry is not None:
+                log_insight(entry)
+                logger.info("Insight logged for user %s: %d new keywords", user_id[:8], len(entry.new_keywords))
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            asyncio.ensure_future(_do())
+        else:
+            logger.debug("No running event loop, skipping insight extraction")
 
     def _log_interaction(
         self, user_id: str, stage_data: dict, *, force_completed: bool,
