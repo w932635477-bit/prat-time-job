@@ -106,6 +106,16 @@ async def run_migrations(db: object) -> None:
     if 'revenue_estimate' not in col_names:
         await conn.execute("ALTER TABLE creator_examples ADD COLUMN revenue_estimate TEXT NOT NULL DEFAULT ''")
     await conn.executescript("""
+        CREATE TABLE IF NOT EXISTS checkins (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            kit_id TEXT NOT NULL,
+            platform TEXT NOT NULL,
+            day INTEGER NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, kit_id, platform, day)
+        );
+        CREATE INDEX IF NOT EXISTS idx_checkins_user ON checkins(user_id);
 
         -- Fix: allow anonymous users (wx_openid can be NULL)
         -- SQLite doesn't support ALTER COLUMN, so recreate the table if needed

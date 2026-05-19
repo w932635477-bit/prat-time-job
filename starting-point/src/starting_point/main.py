@@ -285,6 +285,38 @@ async def get_state(user_id: str, request: Request):
     return state
 
 
+class CheckinRequest(BaseModel):
+    kit_id: str = Field(...)
+    platform: str = Field(...)
+    day: int = Field(..., ge=1)
+
+
+@app.post("/api/checkin")
+async def create_checkin(req: CheckinRequest, request: Request):
+    user_id = _get_session_user_id(request)
+    db: Database = request.app.state.db
+    await db.conn().execute(
+        "INSERT OR IGNORE INTO checkins (user_id, kit_id, platform, day) VALUES (?, ?, ?, ?)",
+        (user_id, req.kit_id, req.platform, req.day),
+    )
+    await db.conn().commit()
+    return {"ok": True}
+
+
+@app.get("/api/checkins/{user_id}")
+async def get_checkins(user_id: str, request: Request):
+    session_user_id = _get_session_user_id(request)
+    if session_user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    db: Database = request.app.state.db
+    cursor = await db.conn().execute(
+        "SELECT kit_id, platform, day FROM checkins WHERE user_id = ?",
+        (user_id,),
+    )
+    rows = await cursor.fetchall()
+    return {"checkins": [{"kit_id": r[0], "platform": r[1], "day": r[2]} for r in rows]}
+
+
 @app.get("/api/messages/{user_id}")
 async def get_messages(user_id: str, request: Request, stage: int = -1):
     session_user_id = _get_session_user_id(request)

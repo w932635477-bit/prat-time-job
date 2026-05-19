@@ -13,6 +13,7 @@ from starting_point.models import ProductPackage, ChatResponse, NextStep
 from starting_point.prompts.stage_one import SYSTEM_PROMPT, EXTRACT_PROMPT, READINESS_CHECK_SUFFIX
 from starting_point.wiki import get_wiki_content, get_wiki_sections, parse_wiki_sections, HINTS as WIKI_HINTS
 from starting_point.insights import extract_insights, log_insight
+from starting_point.confidence.engine import ConfidenceEngine
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,7 @@ class StageOneHandler:
         self._state_repo = state_repo
         self._prompt_builder = prompt_builder or PromptBuilder()
         self._creator_repo = creator_repo
+        self._confidence = ConfidenceEngine()
 
     async def handle(self, user_id: str, message: str, creator_context: str = "") -> ChatResponse:
         await self._msg_repo.save(user_id, "user", message, stage=1)
@@ -112,6 +114,15 @@ class StageOneHandler:
 
         if msg_count >= MIN_STAGE1_MESSAGES:
             system += READINESS_CHECK_SUFFIX.format(count=msg_count)
+
+        current_message = llm_messages[-1].get("content", "") if llm_messages else ""
+        if self._confidence.detect_negative_emotion(current_message):
+            system += (
+                '\n\n⚠️ 用户在产品包装阶段情绪低落。你必须：'
+                '先共情（1-2句话），'
+                '引用用户已有的行业经验来证明产品可行性，'
+                '降低下一步门槛（比如"我们先只定一个价格试试"）。不要空洞鼓励。'
+            )
 
         response = await self._llm.chat(messages=llm_messages, system=system)
 
@@ -546,6 +557,7 @@ class StageOneHandler:
         if "price_transparency" in kp_types or "market_insight" in kp_types:
             conditional.append("定价参考")
         conditional.append("获客渠道")
+        conditional.append("同行内容策略洞察")
         conditional.append("用户常见顾虑")
 
         desired = always_sections + conditional

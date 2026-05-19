@@ -11,6 +11,7 @@ from starting_point.models import StageZeroOutput, ChatResponse, NextStep
 from starting_point.prompts.stage_zero import SYSTEM_PROMPT, FORCE_EXTRACT_SUFFIX, WIKI_USAGE_NOTE
 from starting_point.utils.json import extract_json
 from starting_point.wiki import HINTS, get_wiki_sections
+from starting_point.confidence.engine import ConfidenceEngine
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class StageZeroHandler:
         self._llm = llm
         self._msg_repo = msg_repo
         self._state_repo = state_repo
+        self._confidence = ConfidenceEngine()
 
     async def handle(self, user_id: str, message: str, creator_context: str = "") -> ChatResponse:
         # Save user message
@@ -78,6 +80,14 @@ class StageZeroHandler:
                 **stage_data,
                 "force_extract_triggered": True,
             }
+
+        if self._confidence.detect_negative_emotion(message):
+            system_prompt += (
+                "\n\n⚠️ 用户现在情绪低落，可能想放弃。你必须："
+                "先共情认可ta的感受（1-2句话），"
+                "用ta说过的话来证明ta有价值，"
+                "然后给一个很具体的下一步问题引导ta继续。不要空洞鼓励。"
+            )
 
         # Call LLM
         response_text = await self._llm.chat(

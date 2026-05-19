@@ -402,3 +402,31 @@ async def test_build_market_context_helper():
 
     empty = handler._build_market_context([], "", [])
     assert empty == ""
+
+
+@pytest.mark.asyncio
+async def test_stage_one_negative_emotion_injects_empathy(db):
+    from starting_point.stages.stage_one import StageOneHandler
+    from starting_point.db.repos import MessageRepo, StateRepo
+
+    msg_repo = MessageRepo(db)
+    state_repo = StateRepo(db)
+    llm = AsyncMock()
+    llm.chat.return_value = "我理解你的感受，你的行业经验其实非常有价值。我们先只定一个价格试试？"
+
+    kps = [
+        {"id": "kp_1", "description": "建材价格", "industry": "建材",
+         "knowledge_type": "price_transparency", "target_buyer": "业主",
+         "estimated_value": "省5000元"},
+    ]
+    await state_repo.save("u1", 1, {
+        "status": "completed",
+        "knowledge_points": kps,
+    })
+
+    handler = StageOneHandler(llm, msg_repo, state_repo)
+    await handler.handle("u1", "算了，我没什么用")
+
+    call_args = llm.chat.call_args
+    system = call_args.kwargs.get("system", "")
+    assert "情绪低落" in system or "共情" in system

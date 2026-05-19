@@ -124,3 +124,21 @@ async def test_resume_mid_conversation(db):
     handler = StageZeroHandler(llm, msg_repo, state_repo)
     result = await handler.handle(user_id="u1", message="15年")
     assert not result.is_complete
+
+
+@pytest.mark.asyncio
+async def test_stage_zero_negative_emotion_injects_empathy(db):
+    from starting_point.stages.stage_zero import StageZeroHandler
+    from starting_point.db.repos import MessageRepo, StateRepo
+
+    msg_repo = MessageRepo(db)
+    state_repo = StateRepo(db)
+    llm = AsyncMock()
+    llm.chat.return_value = "我理解你现在的感受。你在这个行业待了这么久，积累的经验是很有价值的。"
+
+    handler = StageZeroHandler(llm, msg_repo, state_repo)
+    await handler.handle("u1", "算了，我不想做了")
+
+    call_args = llm.chat.call_args
+    system = call_args.kwargs.get("system", "")
+    assert "情绪低落" in system or "共情" in system

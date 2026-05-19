@@ -149,6 +149,12 @@ var Kit = (function () {
 
     var dayCard = btn.closest('.calendar-day');
     if (dayCard) dayCard.classList.add('calendar-day--done');
+
+    fetch('/api/checkin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kit_id: kitId, platform: platform, day: day }),
+    }).catch(function () { /* offline fallback: localStorage already saved */ });
   }
 
   // ---- Render content calendar ----
@@ -447,6 +453,37 @@ var Kit = (function () {
       });
     });
     container.appendChild(exportBtn);
+
+    // WeChat follow guide
+    container.appendChild(renderWeChatGuide());
+  }
+
+  // ---- WeChat follow guide ----
+
+  function renderWeChatGuide() {
+    if (localStorage.getItem('sp_wechat_guide_dismissed')) return document.createElement('span');
+
+    var card = document.createElement('div');
+    card.className = 'wechat-guide fade-in';
+
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'wechat-guide__close';
+    closeBtn.textContent = '×';
+    closeBtn.addEventListener('click', function () {
+      localStorage.setItem('sp_wechat_guide_dismissed', '1');
+      card.style.display = 'none';
+    });
+
+    card.innerHTML =
+      '<div class="wechat-guide__title">每天收到行动提醒</div>' +
+      '<div class="wechat-guide__desc">关注公众号，每天早上收到当天的内容任务和鼓励，不再断更</div>' +
+      '<div class="wechat-guide__qr">' +
+        '<div class="wechat-guide__qr-placeholder">公众号二维码</div>' +
+      '</div>' +
+      '<div class="wechat-guide__hint">长按识别二维码，关注即可</div>';
+    card.appendChild(closeBtn);
+
+    return card;
   }
 
   function kitToPlainText(kitData, createdAt) {
