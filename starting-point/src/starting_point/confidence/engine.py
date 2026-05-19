@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from starting_point.confidence.patterns import NEGATIVE_PATTERNS
+from starting_point.confidence.patterns import NEGATIVE_PATTERNS_COMPILED
 from starting_point.models import ConfidenceLevel
 
 
 class ConfidenceEngine:
     def detect_negative_emotion(self, text: str) -> bool:
-        return any(pattern in text for pattern in NEGATIVE_PATTERNS)
+        return any(pattern.search(text) for pattern in NEGATIVE_PATTERNS_COMPILED)
 
     def assess_from_answer(self, answer: str) -> ConfidenceLevel:
         if len(answer) < 10:

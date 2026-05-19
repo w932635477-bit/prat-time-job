@@ -288,19 +288,21 @@ async def get_state(user_id: str, request: Request):
 class CheckinRequest(BaseModel):
     kit_id: str = Field(...)
     platform: str = Field(...)
-    day: int = Field(..., ge=1)
+    day: int = Field(..., ge=1, le=7)
 
 
 @app.post("/api/checkin")
 async def create_checkin(req: CheckinRequest, request: Request):
     user_id = _get_session_user_id(request)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid session")
     db: Database = request.app.state.db
-    await db.conn().execute(
+    cursor = await db.conn().execute(
         "INSERT OR IGNORE INTO checkins (user_id, kit_id, platform, day) VALUES (?, ?, ?, ?)",
         (user_id, req.kit_id, req.platform, req.day),
     )
     await db.conn().commit()
-    return {"ok": True}
+    return {"ok": True, "new": cursor.rowcount > 0}
 
 
 @app.get("/api/checkins/{user_id}")
@@ -310,7 +312,7 @@ async def get_checkins(user_id: str, request: Request):
         raise HTTPException(status_code=403, detail="Forbidden")
     db: Database = request.app.state.db
     cursor = await db.conn().execute(
-        "SELECT kit_id, platform, day FROM checkins WHERE user_id = ?",
+        "SELECT kit_id, platform, day FROM checkins WHERE user_id = ? ORDER BY created_at DESC LIMIT 100",
         (user_id,),
     )
     rows = await cursor.fetchall()

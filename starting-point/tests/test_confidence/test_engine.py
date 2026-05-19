@@ -6,7 +6,16 @@ def test_detect_negative_emotion():
     engine = ConfidenceEngine()
     assert engine.detect_negative_emotion("我不行，什么都不懂")
     assert engine.detect_negative_emotion("没什么用，都是过去的事了")
+    assert engine.detect_negative_emotion("算了，我不想做了")
     assert not engine.detect_negative_emotion("我在建材行业干了12年")
+
+
+def test_detect_negative_emotion_no_false_positives():
+    engine = ConfidenceEngine()
+    assert not engine.detect_negative_emotion("我算了一下大概能赚5000")
+    assert not engine.detect_negative_emotion("养老贷款利率")
+    assert not engine.detect_negative_emotion("明白费率的计算方法")
+    assert not engine.detect_negative_emotion("我不敢说绝对，但这个价格确实合理")
 
 
 def test_assess_confidence_from_answer():
