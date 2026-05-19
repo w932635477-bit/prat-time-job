@@ -286,8 +286,8 @@ async def get_state(user_id: str, request: Request):
 
 
 class CheckinRequest(BaseModel):
-    kit_id: str = Field(...)
-    platform: str = Field(...)
+    kit_id: str = Field(..., max_length=64)
+    platform: str = Field(..., max_length=32)
     day: int = Field(..., ge=1, le=7)
 
 

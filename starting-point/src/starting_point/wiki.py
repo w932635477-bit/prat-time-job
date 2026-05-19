@@ -247,7 +247,10 @@ def sync_wiki_pricing_from_insights(
             skipped.append(f"{industry}: 仅{len(pricings)}条定价数据")
             continue
 
-        wiki_path = _WIKI_ROOT / f"{industry}.md"
+        wiki_path = (_WIKI_ROOT / f"{industry}.md").resolve()
+        if not wiki_path.is_relative_to(_WIKI_ROOT):
+            skipped.append(f"{industry}: invalid path")
+            continue
         if not wiki_path.exists():
             skipped.append(f"{industry}: 无wiki页面")
             continue
@@ -260,6 +263,8 @@ def sync_wiki_pricing_from_insights(
         avg_min = round(sum(p["min"] for p in pricings) / len(pricings))
         avg_max = round(sum(p["max"] for p in pricings) / len(pricings))
         note = pricings[0].get("note", "")
+        # Strip newlines and long content to prevent prompt injection via wiki
+        note = note.replace("\n", " ").strip()[:50]
 
         range_str = f"{avg_min}-{avg_max}元"
         if range_str in content:
