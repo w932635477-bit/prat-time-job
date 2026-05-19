@@ -211,12 +211,15 @@ async def create_session(req: SessionRequest, request: Request, response: JSONRe
 
 @app.get("/api/session")
 async def check_session(request: Request):
-    """Check if current session is valid. Returns user_id if authenticated."""
+    """Check if current session is valid. Returns user_id and tier if authenticated."""
     try:
         user_id = _get_session_user_id(request)
-        return {"authenticated": True, "user_id": user_id}
+        user_repo: UserRepo = request.app.state.user_repo
+        user = await user_repo.get_user(user_id)
+        tier = user.tier if user else "free"
+        return {"authenticated": True, "user_id": user_id, "tier": tier}
     except HTTPException:
-        return {"authenticated": False, "user_id": None}
+        return {"authenticated": False, "user_id": None, "tier": "free"}
 
 
 @app.post("/api/chat", response_model=ChatResponse)

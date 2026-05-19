@@ -100,7 +100,7 @@ class KitRepo:
         conn = self._db.conn()
         cursor = await conn.execute(
             "SELECT id, knowledge_points, product_package, content_direction, "
-            "platform_recommendations, startup_materials, generation_status "
+            "platform_recommendations, startup_materials, generation_status, created_at "
             "FROM startup_kits WHERE user_id = ? ORDER BY id DESC LIMIT 1",
             (user_id,),
         )
@@ -115,6 +115,7 @@ class KitRepo:
             "platform_recommendations": json.loads(row["platform_recommendations"]) if row["platform_recommendations"] else [],
             "startup_materials": json.loads(row["startup_materials"]) if row["startup_materials"] else {},
             "generation_status": row["generation_status"],
+            "created_at": row["created_at"],
         }
 
     async def update_status(self, kit_id: int, status: str) -> None:

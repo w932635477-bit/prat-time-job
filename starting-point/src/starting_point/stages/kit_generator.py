@@ -53,7 +53,7 @@ class KitGenerator:
                 messages=[{"role": "user", "content": context}],
                 system=SYSTEM_PROMPT,
                 temperature=0.8,
-                max_tokens=8192,
+                max_tokens=10240,
             )
 
             parsed = extract_json(response_text)

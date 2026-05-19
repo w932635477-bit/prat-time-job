@@ -45,14 +45,15 @@ async def test_engine_routes_to_stage_one(db):
 
 
 @pytest.mark.asyncio
-async def test_engine_returns_kit_message_at_stage_2(db):
+async def test_engine_routes_to_stage_two_handler(db):
     from starting_point.stages.engine import ConversationEngine
-    from starting_point.db.repos import MessageRepo, StateRepo, KitRepo, KitRepo
+    from starting_point.db.repos import MessageRepo, StateRepo, KitRepo
 
     msg_repo = MessageRepo(db)
     state_repo = StateRepo(db)
     kit_repo = KitRepo(db)
     llm = AsyncMock()
+    llm.chat.return_value = "你可以参考第1天的日历内容，直接复制发布就行。"
 
     # Pre-save state at stage 2
     await state_repo.save("u2", 2, {
@@ -61,5 +62,10 @@ async def test_engine_returns_kit_message_at_stage_2(db):
     })
 
     engine = ConversationEngine(llm, msg_repo, state_repo, kit_repo)
-    result = await engine.handle(user_id="u2", message="查看套件")
+    result = await engine.handle(
+        user_id="u2",
+        message="我今天该发什么",
+        tier="standard",
+    )
     assert result.stage == 2
+    assert "日历" in result.message or "发布" in result.message

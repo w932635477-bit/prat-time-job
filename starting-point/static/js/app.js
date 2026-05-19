@@ -67,6 +67,9 @@ var App = (function () {
         .then(function (data) {
           if (data.authenticated && data.user_id) {
             localStorage.setItem(USER_ID_KEY, data.user_id);
+            if (data.tier) {
+              localStorage.setItem('sp_user_info', JSON.stringify({ tier: data.tier }));
+            }
             sessionReady = true;
             if (callback) callback();
           } else {
@@ -85,6 +88,9 @@ var App = (function () {
       .then(function (data) {
         if (data.authenticated && data.user_id) {
           localStorage.setItem(USER_ID_KEY, data.user_id);
+          if (data.tier) {
+            localStorage.setItem('sp_user_info', JSON.stringify({ tier: data.tier }));
+          }
           sessionReady = true;
           if (callback) callback();
           return;

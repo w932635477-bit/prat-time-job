@@ -16,6 +16,35 @@ var Chat = (function () {
 
   function renderMarkdown(text) {
     var html = escapeHtml(text);
+
+    // Extract and protect tables before other transforms
+    html = html.replace(/(?:^\|.+\|[ ]*\n)+/gm, function (block) {
+      var lines = block.trim().split('\n');
+      var rows = [];
+      for (var i = 0; i < lines.length; i++) {
+        var cells = lines[i].trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
+        // Skip separator line (---)
+        if (cells.every(function (c) { return /^[\s\-:]+$/.test(c); })) continue;
+        rows.push(cells.map(function (c) { return c.trim(); }));
+      }
+      if (rows.length === 0) return '';
+
+      var tableHtml = '<table><thead><tr>';
+      rows[0].forEach(function (cell) {
+        tableHtml += '<th>' + cell + '</th>';
+      });
+      tableHtml += '</tr></thead><tbody>';
+      for (var r = 1; r < rows.length; r++) {
+        tableHtml += '<tr>';
+        rows[r].forEach(function (cell) {
+          tableHtml += '<td>' + cell + '</td>';
+        });
+        tableHtml += '</tr>';
+      }
+      tableHtml += '</tbody></table>';
+      return tableHtml + '\n';
+    });
+
     html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
     html = html.replace(/^---$/gm, '<hr>');
@@ -184,7 +213,27 @@ var Chat = (function () {
       '<div class="output-card__field">' +
         '<div class="output-card__label">交付方式</div>' +
         '<div class="output-card__value">' + escapeHtml(pkg.delivery_method || '') + '</div>' +
-      '</div>';
+      '</div>' +
+      (pkg.service_flow && pkg.service_flow.length > 0
+        ? '<div class="output-card__field">' +
+            '<div class="output-card__label">服务流程</div>' +
+            '<div class="output-card__value"><ol style="margin:0;padding-left:1.2em;">' +
+              pkg.service_flow.map(function (s) { return '<li>' + escapeHtml(s) + '</li>'; }).join('') +
+            '</ol></div>' +
+          '</div>'
+        : '') +
+      (pkg.deliverables
+        ? '<div class="output-card__field">' +
+            '<div class="output-card__label">客户获得</div>' +
+            '<div class="output-card__value">' + escapeHtml(pkg.deliverables) + '</div>' +
+          '</div>'
+        : '') +
+      (pkg.tools_recommended && pkg.tools_recommended.length > 0
+        ? '<div class="output-card__field">' +
+            '<div class="output-card__label">推荐工具</div>' +
+            '<div class="output-card__value">' + escapeHtml(pkg.tools_recommended.join('、')) + '</div>' +
+          '</div>'
+        : '');
 
     container.appendChild(card);
     return container;

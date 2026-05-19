@@ -106,6 +106,143 @@ var Kit = (function () {
     return section;
   }
 
+  // ---- Render action guide ----
+
+  function renderActionGuide(guide, kitId) {
+    var card = document.createElement('div');
+    card.className = 'action-guide fade-in';
+
+    var html = '<div class="action-guide__title">你的第一步</div>';
+
+    if (guide.day1_what) {
+      html += '<div class="action-guide__what">' + escapeHtml(guide.day1_what) + '</div>';
+    }
+    if (guide.day1_how) {
+      html += '<div class="action-guide__how">' + escapeHtml(guide.day1_how) + '</div>';
+    }
+    if (guide.week_goal) {
+      html += '<div class="action-guide__goal">7天目标: ' + escapeHtml(guide.week_goal) + '</div>';
+    }
+    if (guide.mindset_tip) {
+      html += '<div class="action-guide__tip">' + escapeHtml(guide.mindset_tip) + '</div>';
+    }
+
+    card.innerHTML = html;
+    return card;
+  }
+
+  // ---- Check-in (localStorage) ----
+
+  function getCheckinKey(kitId, platform, day) {
+    return 'sp_checkin_' + kitId + '_' + platform + '_' + day;
+  }
+
+  function isCheckedIn(kitId, platform, day) {
+    return !!localStorage.getItem(getCheckinKey(kitId, platform, day));
+  }
+
+  function doCheckIn(kitId, platform, day, btn) {
+    localStorage.setItem(getCheckinKey(kitId, platform, day), String(Date.now()));
+    btn.textContent = '已完成';
+    btn.classList.add('calendar-day__checkin-btn--done');
+    btn.disabled = true;
+
+    var dayCard = btn.closest('.calendar-day');
+    if (dayCard) dayCard.classList.add('calendar-day--done');
+  }
+
+  // ---- Render content calendar ----
+
+  function renderContentCalendar(platform, calendar, kitId, createdAt) {
+    if (!calendar || calendar.length === 0) return null;
+
+    var section = document.createElement('div');
+    section.className = 'calendar-section fade-in';
+
+    var title = document.createElement('div');
+    title.className = 'calendar-section__title';
+    title.textContent = platform + ' 7天内容日历';
+    section.appendChild(title);
+
+    // Calculate current day number based on kit creation time
+    var currentDay = 1;
+    if (createdAt) {
+      var createdMs = new Date(createdAt.replace(' ', 'T')).getTime();
+      if (!isNaN(createdMs)) {
+        currentDay = Math.floor((Date.now() - createdMs) / 86400000) + 1;
+        if (currentDay < 1) currentDay = 1;
+        if (currentDay > 7) currentDay = 7;
+      }
+    }
+
+    // Show progress indicator
+    var progress = document.createElement('div');
+    progress.className = 'calendar-progress';
+    var doneCount = calendar.filter(function (d) { return d.day <= currentDay; }).length;
+    progress.textContent = '进度: ' + doneCount + '/' + calendar.length + ' 天已解锁';
+    section.appendChild(progress);
+
+    calendar.forEach(function (day) {
+      // Only show current day and earlier (unlock by day)
+      if (day.day > currentDay) {
+        var locked = document.createElement('div');
+        locked.className = 'calendar-day calendar-day--locked';
+        locked.innerHTML =
+          '<div class="calendar-day__header">' +
+            '<span class="calendar-day__badge">第' + day.day + '天</span>' +
+            '<span class="calendar-day__theme">明天解锁</span>' +
+          '</div>' +
+          '<div class="calendar-day__locked-text">完成今天的任务后，明天会解锁新内容</div>';
+        section.appendChild(locked);
+        return;
+      }
+      var card = document.createElement('div');
+      card.className = 'calendar-day';
+      if (isCheckedIn(kitId, platform, day.day)) {
+        card.classList.add('calendar-day--done');
+      }
+
+      var bodyText = day.body || '';
+      card.innerHTML =
+        '<div class="calendar-day__header">' +
+          '<span class="calendar-day__badge">第' + day.day + '天</span>' +
+          '<span class="calendar-day__theme">' + escapeHtml(day.theme || '') + '</span>' +
+          (day.estimated_time ? '<span class="calendar-day__time">' + escapeHtml(day.estimated_time) + '</span>' : '') +
+        '</div>' +
+        '<div class="calendar-day__title">' + escapeHtml(day.title || '') + '</div>' +
+        (bodyText ? '<div class="calendar-day__body">' + escapeHtml(bodyText) + '</div>' : '') +
+        (day.why ? '<div class="calendar-day__why">' + escapeHtml(day.why) + '</div>' : '') +
+        (day.success_signal ? '<div class="calendar-day__signal">成功信号: ' + escapeHtml(day.success_signal) + '</div>' : '');
+
+      if (bodyText) {
+        var labelRow = card.querySelector('.calendar-day__body');
+        if (labelRow) {
+          var copyBtn = createCopyButton(day.title ? day.title + '\n\n' + bodyText : bodyText);
+          copyBtn.style.marginTop = '4px';
+          labelRow.appendChild(copyBtn);
+        }
+      }
+
+      var checkinBtn = document.createElement('button');
+      checkinBtn.className = 'calendar-day__checkin-btn';
+      if (isCheckedIn(kitId, platform, day.day)) {
+        checkinBtn.textContent = '已完成';
+        checkinBtn.classList.add('calendar-day__checkin-btn--done');
+        checkinBtn.disabled = true;
+      } else {
+        checkinBtn.textContent = '打卡';
+        checkinBtn.addEventListener('click', function () {
+          doCheckIn(kitId, platform, day.day, checkinBtn);
+        });
+      }
+      card.appendChild(checkinBtn);
+
+      section.appendChild(card);
+    });
+
+    return section;
+  }
+
   // ---- Render startup materials for one platform ----
 
   function renderPlatformMaterials(platformName, materials) {
@@ -204,6 +341,15 @@ var Kit = (function () {
 
     // Startup materials per platform
     if (kitData.startup_materials && Object.keys(kitData.startup_materials).length > 0) {
+      var kitId = kitData.id || 'unknown';
+      var kitCreatedAt = kitData.created_at || null;
+
+      // Action guide (shown first)
+      var guide = kitData.startup_materials._action_guide;
+      if (guide && typeof guide === 'object') {
+        container.appendChild(renderActionGuide(guide, kitId));
+      }
+
       var materialHeading = document.createElement('div');
       materialHeading.className = 'output-card__title fade-in';
       materialHeading.textContent = '启动素材';
@@ -212,9 +358,15 @@ var Kit = (function () {
       container.appendChild(materialHeading);
 
       Object.keys(kitData.startup_materials).forEach(function (platform) {
+        if (platform.startsWith('_')) return;
         var materials = kitData.startup_materials[platform];
         if (materials && typeof materials === 'object') {
           container.appendChild(renderPlatformMaterials(platform, materials));
+
+          // Content calendar for this platform
+          if (materials.content_calendar && materials.content_calendar.length > 0) {
+            container.appendChild(renderContentCalendar(platform, materials.content_calendar, kitId, kitCreatedAt));
+          }
         }
       });
     }
@@ -252,10 +404,135 @@ var Kit = (function () {
               ? pkg.price_range.min + ' - ' + pkg.price_range.max + ' 元'
               : '待定') +
           '</div>' +
-        '</div>';
+        '</div>' +
+        (pkg.service_flow && pkg.service_flow.length > 0
+          ? '<div class="output-card__field">' +
+              '<div class="output-card__label">服务流程</div>' +
+              '<div class="output-card__value"><ol style="margin:0;padding-left:1.2em;">' +
+                pkg.service_flow.map(function (s) { return '<li>' + escapeHtml(s) + '</li>'; }).join('') +
+              '</ol></div>' +
+            '</div>'
+          : '') +
+        (pkg.deliverables
+          ? '<div class="output-card__field">' +
+              '<div class="output-card__label">客户获得</div>' +
+              '<div class="output-card__value">' + escapeHtml(pkg.deliverables) + '</div>' +
+            '</div>'
+          : '') +
+        (pkg.tools_recommended && pkg.tools_recommended.length > 0
+          ? '<div class="output-card__field">' +
+              '<div class="output-card__label">推荐工具</div>' +
+              '<div class="output-card__value">' + escapeHtml(pkg.tools_recommended.join('、')) + '</div>' +
+            '</div>'
+          : '');
 
       container.appendChild(pkgCard);
     }
+
+    // Export all button
+    var exportBtn = document.createElement('button');
+    exportBtn.className = 'export-btn fade-in';
+    exportBtn.textContent = '复制全部内容';
+    exportBtn.addEventListener('click', function () {
+      var text = kitToPlainText(kitData, kitCreatedAt);
+      copyToClipboard(text).then(function (success) {
+        if (success) {
+          exportBtn.textContent = '已复制';
+          exportBtn.classList.add('copy-btn--copied');
+          setTimeout(function () {
+            exportBtn.textContent = '复制全部内容';
+            exportBtn.classList.remove('copy-btn--copied');
+          }, 2000);
+        }
+      });
+    });
+    container.appendChild(exportBtn);
+  }
+
+  function kitToPlainText(kitData, createdAt) {
+    var lines = [];
+
+    // Calculate current day for calendar filtering
+    var currentDay = 7;
+    if (createdAt) {
+      var createdMs = new Date(createdAt.replace(' ', 'T')).getTime();
+      if (!isNaN(createdMs)) {
+        currentDay = Math.floor((Date.now() - createdMs) / 86400000) + 1;
+        if (currentDay < 1) currentDay = 1;
+        if (currentDay > 7) currentDay = 7;
+      }
+    }
+    if (kitData.content_direction) {
+      lines.push('【内容方向】');
+      lines.push(kitData.content_direction);
+      lines.push('');
+    }
+    // Action guide
+    if (kitData.startup_materials && kitData.startup_materials._action_guide) {
+      var g = kitData.startup_materials._action_guide;
+      lines.push('【行动指南】');
+      if (g.day1_what) lines.push('今天做什么: ' + g.day1_what);
+      if (g.day1_how) lines.push('操作步骤: ' + g.day1_how);
+      if (g.week_goal) lines.push('7天目标: ' + g.week_goal);
+      if (g.mindset_tip) lines.push('心态提醒: ' + g.mindset_tip);
+      lines.push('');
+    }
+    if (kitData.platform_recommendations && kitData.platform_recommendations.length > 0) {
+      lines.push('【推荐平台】');
+      kitData.platform_recommendations
+        .sort(function (a, b) { return (a.priority || 99) - (b.priority || 99); })
+        .forEach(function (rec) {
+          lines.push('#' + (rec.priority || '-') + ' ' + rec.platform + ' - ' + rec.reason);
+          lines.push('  内容形式: ' + rec.content_format);
+        });
+      lines.push('');
+    }
+    if (kitData.startup_materials) {
+      Object.keys(kitData.startup_materials).forEach(function (platform) {
+        if (platform.startsWith('_')) return;
+        var m = kitData.startup_materials[platform];
+        if (!m || typeof m !== 'object') return;
+        lines.push('【' + platform + ' 启动素材】');
+        if (m.account_name_suggestions) lines.push('账号名: ' + m.account_name_suggestions.join(' / '));
+        if (m.bio_short) lines.push('简介: ' + m.bio_short);
+        if (m.bio_full) lines.push('详细简介: ' + m.bio_full);
+        if (m.first_post) {
+          if (m.first_post.title) lines.push('首条标题: ' + m.first_post.title);
+          if (m.first_post.body) lines.push('首条内容: ' + m.first_post.body);
+          if (m.first_post.price) lines.push('定价: ' + m.first_post.price + ' 元');
+        }
+        if (m.reply_templates) {
+          m.reply_templates.forEach(function (t) {
+            lines.push('回复模板[' + t.trigger + ']: ' + t.reply);
+          });
+        }
+        if (m.content_calendar && m.content_calendar.length > 0) {
+          lines.push('');
+          var unlockedDays = m.content_calendar.filter(function (d) { return d.day <= currentDay; });
+          lines.push('【' + platform + ' 内容日历（已解锁' + unlockedDays.length + '/' + m.content_calendar.length + '天）】');
+          unlockedDays.forEach(function (d) {
+            lines.push('第' + d.day + '天 [' + (d.theme || '') + '] ' + (d.title || ''));
+            if (d.body) lines.push(d.body);
+            if (d.why) lines.push('  原因: ' + d.why);
+            lines.push('');
+          });
+        }
+        lines.push('');
+      });
+    }
+    if (kitData.product_package) {
+      var pkg = kitData.product_package;
+      lines.push('【产品方案】');
+      lines.push('产品名: ' + (pkg.product_name || ''));
+      lines.push(pkg.one_liner || '');
+      if (pkg.target_buyer) lines.push('目标客户: ' + pkg.target_buyer);
+      if (pkg.price_range) lines.push('定价: ' + pkg.price_range.min + '-' + pkg.price_range.max + ' 元');
+      if (pkg.delivery_method) lines.push('交付方式: ' + pkg.delivery_method);
+      if (pkg.service_flow) lines.push('服务流程: ' + pkg.service_flow.join(' → '));
+      if (pkg.deliverables) lines.push('客户获得: ' + pkg.deliverables);
+      if (pkg.tools_recommended) lines.push('推荐工具: ' + pkg.tools_recommended.join('、'));
+    }
+    return lines.join('\n');
   }
 
   // ---- Load kit ----

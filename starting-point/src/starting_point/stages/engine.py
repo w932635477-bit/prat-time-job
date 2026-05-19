@@ -10,6 +10,7 @@ from starting_point.models import ChatResponse
 from starting_point.payments.access import check_phase_access
 from starting_point.stages.stage_zero import StageZeroHandler
 from starting_point.stages.stage_one import StageOneHandler
+from starting_point.stages.stage_two import StageTwoHandler
 from starting_point.stages.kit_generator import KitGenerator
 
 logger = logging.getLogger(__name__)
@@ -88,13 +89,11 @@ class ConversationEngine:
                     )
             return result
 
-        # Stage 2+ = kit generated, user is viewing results
-        return ChatResponse(
-            message="你的启动套件已经生成完毕！",
-            stage=2,
-            stage_data=state["stage_data"] if state else {},
-            is_complete=False,
+        # Stage 2+ = kit generated, user can ask execution questions
+        handler = StageTwoHandler(
+            self._llm, self._msg_repo, self._state_repo, self._kit_repo,
         )
+        return await handler.handle(user_id, message)
 
     async def _get_creator_context(
         self,

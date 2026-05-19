@@ -241,6 +241,33 @@ body {
 .bubble-ai li { margin-bottom: var(--sp-1); line-height: 1.6; }
 .bubble-ai hr { border: none; border-top: 1px solid var(--divider); margin: var(--sp-3) 0; }
 
+/* Tables inside AI bubbles (for competitor insights) */
+.bubble-ai table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--sp-3) 0;
+  font: var(--t-caption);
+}
+.bubble-ai thead th {
+  text-align: left;
+  padding: var(--sp-2) var(--sp-2);
+  border-bottom: 1px solid var(--gold-border);
+  color: var(--gold);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.bubble-ai tbody td {
+  padding: var(--sp-2) var(--sp-2);
+  border-bottom: 1px solid var(--divider);
+  color: var(--text-primary);
+}
+.bubble-ai tbody tr:last-child td {
+  border-bottom: none;
+}
+.bubble-ai td strong {
+  color: var(--gold);
+}
+
 .bubble-user-option {
   display: inline-block;
   background: var(--gold);

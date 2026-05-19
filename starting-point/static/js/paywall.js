@@ -18,11 +18,10 @@ var Paywall = (function () {
     }
 
     // Fetch user info to check tier
-    fetch('/api/state/' + encodeURIComponent(userId))
+    fetch('/api/session', { method: 'GET' })
       .then(function (r) { return r.json(); })
-      .then(function () {
-        // Check tier from localStorage (set by auth flow) or assume free
-        var tier = getUserTier();
+      .then(function (data) {
+        var tier = (data.authenticated && data.tier) ? data.tier : getUserTier();
         if (tier === 'standard' || tier === 'human') {
           // Paid user, proceed to kit
           if (typeof App !== 'undefined' && App.onStageOneComplete) {
@@ -71,7 +70,7 @@ var Paywall = (function () {
         '<div class="pricing-card pricing-card--popular" id="pay-standard" data-tier="standard">' +
           '<div class="pricing-card__name">完整方案包</div>' +
           '<div class="pricing-card__price">¥29 <span>/ 60天</span></div>' +
-          '<div class="pricing-card__desc">全部 6 阶段对话 + AI 生成的启动套件</div>' +
+          '<div class="pricing-card__desc">3 阶段深度对话 + AI 生成的启动套件</div>' +
         '</div>' +
         '<div class="pricing-card" id="pay-human" data-tier="human">' +
           '<div class="pricing-card__name">真人教练加持</div>' +
@@ -223,11 +222,9 @@ var Paywall = (function () {
   function updateLocalTier(tier) {
     try {
       var userInfo = localStorage.getItem('sp_user_info');
-      if (userInfo) {
-        var parsed = JSON.parse(userInfo);
-        parsed.tier = tier;
-        localStorage.setItem('sp_user_info', JSON.stringify(parsed));
-      }
+      var parsed = userInfo ? JSON.parse(userInfo) : {};
+      parsed.tier = tier;
+      localStorage.setItem('sp_user_info', JSON.stringify(parsed));
     } catch (e) { /* ignore */ }
   }
 
