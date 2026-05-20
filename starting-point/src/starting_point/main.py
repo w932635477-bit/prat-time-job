@@ -104,7 +104,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline'; "
+            "script-src 'self' 'unsafe-inline' https://res.wx.qq.com; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: https://api.qrserver.com; "
             "connect-src 'self' https://open.weixin.qq.com; "
