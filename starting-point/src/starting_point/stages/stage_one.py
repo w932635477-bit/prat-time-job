@@ -124,6 +124,15 @@ class StageOneHandler:
                 '降低下一步门槛（比如"我们先只定一个价格试试"）。不要空洞鼓励。'
             )
 
+        if self._confidence.detect_helplessness(current_message):
+            system += (
+                '\n\n⚠️ 用户不知道怎么开始。你必须：'
+                '在这次回复中给一个具体的、现在就能做的第一步行动。'
+                '格式：「第一步你现在就能做：XX」。'
+                '这一步必须简单到不需要任何准备就能完成。'
+                '给完行动之后再继续对话。'
+            )
+
         response = await self._llm.chat(messages=llm_messages, system=system)
 
         await self._msg_repo.save(user_id, "assistant", response, stage=1)

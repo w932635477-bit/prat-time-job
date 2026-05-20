@@ -11,3 +11,13 @@ NEGATIVE_PATTERNS_COMPILED: list[re.Pattern[str]] = [
         "学不会", "不敢", "丢人", "不好意思", "白费", "浪费",
     ]
 ]
+
+HELPLESSNESS_PATTERNS_COMPILED: list[re.Pattern[str]] = [
+    re.compile(r'(?:^|[，。！？、\s])' + re.escape(p) + r'(?:$|[，。！？、\s])')
+    for p in [
+        "不会拍视频", "不知道怎么开始", "不知道怎么做",
+        "没拍过视频", "从哪开始", "怎么开始",
+        "不知道第一步", "没做过视频", "不会用手机拍",
+        "没弄过",
+    ]
+]

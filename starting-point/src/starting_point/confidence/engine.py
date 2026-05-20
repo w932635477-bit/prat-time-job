@@ -8,6 +8,10 @@ class ConfidenceEngine:
     def detect_negative_emotion(self, text: str) -> bool:
         return any(pattern.search(text) for pattern in NEGATIVE_PATTERNS_COMPILED)
 
+    def detect_helplessness(self, text: str) -> bool:
+        from starting_point.confidence.patterns import HELPLESSNESS_PATTERNS_COMPILED
+        return any(pattern.search(text) for pattern in HELPLESSNESS_PATTERNS_COMPILED)
+
     def assess_from_answer(self, answer: str) -> ConfidenceLevel:
         if len(answer) < 10:
             return ConfidenceLevel.LOW

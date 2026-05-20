@@ -62,3 +62,19 @@ def test_search_intent_answer_scores_medium():
         "我在小红书上搜过瓷砖选购攻略"
     )
     assert level in (ConfidenceLevel.MEDIUM, ConfidenceLevel.HIGH)
+
+
+def test_detect_helplessness():
+    engine = ConfidenceEngine()
+    assert engine.detect_helplessness("不会拍视频")
+    assert engine.detect_helplessness("不知道怎么开始")
+    assert engine.detect_helplessness("从哪开始")
+    assert engine.detect_helplessness("没拍过视频，不知道怎么做")
+    assert engine.detect_helplessness("不会用手机拍")
+
+
+def test_detect_helplessness_no_false_positives():
+    engine = ConfidenceEngine()
+    assert not engine.detect_helplessness("我拍了一个视频发到抖音上了")
+    assert not engine.detect_helplessness("做了20年厨师了")
+    assert not engine.detect_helplessness("开始之前先聊聊你的经验")

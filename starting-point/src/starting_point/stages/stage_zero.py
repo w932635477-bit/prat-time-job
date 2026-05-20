@@ -89,6 +89,15 @@ class StageZeroHandler:
                 "然后给一个很具体的下一步问题引导ta继续。不要空洞鼓励。"
             )
 
+        if self._confidence.detect_helplessness(message):
+            system_prompt += (
+                "\n\n⚠️ 用户不知道怎么开始，处于迷茫状态。你必须："
+                "在这次回复中给一个具体的、现在就能做的第一步行动。"
+                "格式：「第一步你现在就能做：XX」。"
+                "这一步必须简单到不需要任何准备就能完成（比如\"拿出手机，拍一张你做XX的照片\"）。"
+                "给完行动之后，再问一个问题继续了解ta的情况。"
+            )
+
         # Call LLM
         response_text = await self._llm.chat(
             messages=llm_messages,
