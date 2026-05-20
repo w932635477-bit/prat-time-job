@@ -12,3 +12,4 @@ starting-point/*.db
 *.egg-info/
 .gstack/
 .claude/skills/
+starting-point/data/
