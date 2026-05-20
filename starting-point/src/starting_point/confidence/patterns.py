@@ -20,4 +20,10 @@ HELPLESSNESS_PATTERNS_COMPILED: list[re.Pattern[str]] = [
         "不知道第一步", "没做过视频", "不会用手机拍",
         "没弄过",
     ]
+] + [
+    # Broader patterns: prefix-only match (allows trailing chars like "呢/了/啊")
+    re.compile(r'(?:^|[，。！？、\s])' + re.escape(p))
+    for p in [
+        "怎么开始做", "不知道怎么做", "不会做",
+    ]
 ]

@@ -71,6 +71,8 @@ def test_detect_helplessness():
     assert engine.detect_helplessness("从哪开始")
     assert engine.detect_helplessness("没拍过视频，不知道怎么做")
     assert engine.detect_helplessness("不会用手机拍")
+    assert engine.detect_helplessness("怎么开始做短视频呢")
+    assert engine.detect_helplessness("怎么开始做短视频")
 
 
 def test_detect_helplessness_no_false_positives():
