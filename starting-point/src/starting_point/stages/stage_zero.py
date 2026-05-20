@@ -15,6 +15,7 @@ from starting_point.confidence.engine import ConfidenceEngine
 
 logger = logging.getLogger(__name__)
 
+MIN_STAGE0_MESSAGES = 3
 MAX_STAGE0_MESSAGES = 10
 
 # Sections useful for discovery probing (lighter than Stage 1)
@@ -80,6 +81,14 @@ class StageZeroHandler:
                 **stage_data,
                 "force_extract_triggered": True,
             }
+
+        if user_msg_count < MIN_STAGE0_MESSAGES:
+            system_prompt += (
+                "\n\n## 重要：继续对话，不要输出JSON\n"
+                "目前对话才刚开始，你还没有充分了解用户的经验。"
+                "继续提问，挖掘更多具体场景和案例。"
+                "只有在对话进行了至少3轮之后，且你确信有3+个有效知识点时，才输出JSON。"
+            )
 
         if self._confidence.detect_negative_emotion(message):
             system_prompt += (
@@ -157,6 +166,23 @@ class StageZeroHandler:
         stage_data: dict,
         user_msg_count: int,
     ) -> ChatResponse:
+        # Safety: reject premature extraction even if LLM ignored the instruction
+        if user_msg_count < MIN_STAGE0_MESSAGES:
+            logger.info("Rejecting premature stage 0 extraction at turn %d", user_msg_count)
+            follow_up = "你提取的知识点还不够，请继续提问来发现更多可变现的经验。"
+            await self._msg_repo.save(user_id, "assistant", follow_up, stage=0)
+            new_stage_data = {
+                **stage_data,
+                "user_message_count": user_msg_count,
+            }
+            await self._state_repo.save(user_id, 0, new_stage_data)
+            return ChatResponse(
+                message=follow_up,
+                stage=0,
+                stage_data=new_stage_data,
+                is_complete=False,
+            )
+
         try:
             validated = StageZeroOutput.model_validate(parsed)
             # Valid with 3+ points -> stage complete
